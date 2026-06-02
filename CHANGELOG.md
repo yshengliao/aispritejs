@@ -1,0 +1,73 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-06-03
+
+Initial release — the renderer-agnostic core (modules 1–2 of the roadmap).
+
+### Added
+
+- **`createSpriteAnimator(graph)`** — the public factory returning a
+  `SpriteAnimator`. No exported class constructor (family convention: public
+  API = `createX`). Implemented as closures, so methods never depend on `this`.
+- **Inputs** — three kinds driving the visual state machine:
+  - `Number` (continuous, e.g. `speed`) and `Boolean` (toggle, e.g.
+    `isGrounded`), set via `setInput(name, value)`.
+  - `Trigger` (one-shot, e.g. `jump`), fired via `fireTrigger(name)`; stays
+    pending across frames until a transition consumes it.
+  - O(1) lookup; unknown names throw `UnknownInputError`, kind mismatches throw
+    `InputTypeError`, and `NaN` is rejected.
+- **Transition graph** — `StateDef` (animation key + `loop` / `onEnd` / `speed`),
+  `TransitionCondition` (`Equals` / `NotEquals` / `GreaterThan` / `LessThan` /
+  `Trigger`), and `TransitionDef` with **Any-State** (`from: "*"`) and integer
+  `priority`. Resolution is deterministic: highest priority then declared order,
+  taking the first *effective* transition. A self-targeting transition is
+  effective only if it consumes a Trigger (a Number/Boolean self-loop cannot
+  restart the clip every frame).
+- **`update(deltaMs)`** — advances the timer by `dt × speed` (negative `dt`
+  clamps to `0`), evaluates transitions, computes the active frame from
+  cumulative per-frame durations + loop, and fires `onComplete` once for a
+  finished non-looping clip followed by any `onEnd` auto-transition. No
+  per-frame allocation.
+- **Outputs** — `activeState`, `activeFrameKey`, `activeFrameIndex` for renderer
+  adapters.
+- **Typed emitters** — `onStateChange((to, from) => …)` and
+  `onComplete((state) => …)`, each returning an unsubscribe and accepting
+  `{ signal, once }`. Own minimal implementation; **does not** import
+  `aieventjs` or any sibling.
+- **Lifecycle** — `reset()` returns to the initial state and restores input
+  defaults without releasing buffers (fires `onStateChange` only if the state
+  changed); `dispose()` is idempotent and makes subsequent mutators throw
+  `SpriteAnimatorDisposedError`.
+- **Fail-fast validation** — `createSpriteAnimator` validates every
+  cross-reference the type system cannot (missing animation, unknown transition
+  target, operator/kind compatibility, positive durations and speed, `onEnd`
+  vs `loop`) and throws `InvalidGraphError`.
+- **Atlas-shaped input** — the graph consumes PixiJS-v8-native `animations` /
+  `frames` blocks (only frame keys + `duration` are read by the core),
+  augmented with the `aispritejs` `inputs` / `states` / `transitions` block. A
+  foreign event-driven `states` block is ignored.
+- **Docs** — README (canonical) + `README_ZHTW.md`, `STABILITY.md`,
+  `CONTRIBUTING.md`, `ROADMAP.md`, `llms.txt` / `llms-full.txt`, and a runnable
+  Node example (`examples/01-platformer-inputs`).
+
+### Guarantees (CI)
+
+- Strict TypeScript (`strict` + `noUncheckedIndexedAccess` +
+  `exactOptionalPropertyTypes`), no `any`.
+- Dual ESM + CJS build via `tsup`; `sideEffects: false`; `.` subpath export.
+- **Zero runtime dependencies**; the root import graph contains no `pixi.js`,
+  DOM, or canvas API.
+- `prepublishOnly` gate: typecheck → lint → coverage → build → verify:exports →
+  verify:llms → check:size. Coverage at 100 % statements / branches / functions
+  / lines (above the family floor of 95 / 90 / 100 / 100). Core gzip ≈ 3.5 KB.
+- OIDC + SLSA provenance publish on tag-push.
+
+[Unreleased]: https://github.com/yshengliao/aispritejs/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/yshengliao/aispritejs/releases/tag/v0.1.0

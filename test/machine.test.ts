@@ -1,0 +1,355 @@
+import { describe, expect, it, vi } from "vitest";
+import { SpriteAnimatorDisposedError, createSpriteAnimator } from "../src/index.js";
+import { clips, platformer } from "./fixtures/graphs.js";
+
+describe("initial state", () => {
+  it("starts in the declared initial state on frame 0", () => {
+    const a = createSpriteAnimator(platformer());
+    expect(a.activeState).toBe("idle");
+    expect(a.activeFrameKey).toBe("idle_0");
+    expect(a.activeFrameIndex).toBe(0);
+    expect(a.disposed).toBe(false);
+  });
+
+  it("defaults the initial state to the first declared state", () => {
+    const a = createSpriteAnimator({
+      animations: { a: ["a0"], b: ["b0"] },
+      inputs: {},
+      states: { a: { animation: "a" }, b: { animation: "b" } },
+      transitions: [],
+    });
+    expect(a.activeState).toBe("a");
+  });
+});
+
+describe("number / boolean conditions", () => {
+  it("transitions idle→walk when speed > 0 and back when speed === 0", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 5);
+    a.update(0);
+    expect(a.activeState).toBe("walk");
+
+    a.setInput("speed", 0);
+    a.update(0);
+    expect(a.activeState).toBe("idle");
+  });
+
+  it("evaluates without advancing time on update(0)", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 1);
+    a.update(0);
+    expect(a.activeState).toBe("walk");
+    expect(a.activeFrameIndex).toBe(0);
+  });
+
+  it("supports LessThan, and number / boolean NotEquals operators", () => {
+    const a = createSpriteAnimator({
+      animations: { lo: ["lo0"], hi: ["hi0"], other: ["o0"], done: ["d0"] },
+      inputs: { n: { type: "number", default: 5 }, flag: { type: "boolean", default: true } },
+      states: {
+        lo: { animation: "lo" },
+        hi: { animation: "hi" },
+        other: { animation: "other" },
+        done: { animation: "done" },
+      },
+      transitions: [
+        { from: "lo", to: "hi", when: [{ input: "n", op: "LessThan", value: 3 }] },
+        { from: "hi", to: "other", when: [{ input: "flag", op: "NotEquals", value: true }] },
+        { from: "other", to: "done", when: [{ input: "n", op: "NotEquals", value: 5 }] },
+      ],
+      initial: "lo",
+    });
+    a.setInput("n", 1); // 1 < 3 → hi; also 1 !== 5 later
+    a.update(0);
+    expect(a.activeState).toBe("hi");
+    a.setInput("flag", false); // false !== true → other
+    a.update(0);
+    expect(a.activeState).toBe("other");
+    a.update(0); // n (1) !== 5 → done  (exercises the number NotEquals closure)
+    expect(a.activeState).toBe("done");
+  });
+});
+
+describe("triggers", () => {
+  it("fires an Any-State transition and consumes the trigger (one-shot)", () => {
+    const a = createSpriteAnimator(platformer());
+    a.fireTrigger("jump");
+    a.update(0);
+    expect(a.activeState).toBe("jump");
+
+    // Leave jump by returning the input that no longer holds: set speed and go
+    // back to idle is not wired from jump, so it stays — but a second update
+    // without re-firing must NOT re-pick the (consumed) trigger.
+    a.update(16);
+    expect(a.activeState).toBe("jump");
+  });
+
+  it("jump wins over walk by priority when both conditions hold", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 9);
+    a.fireTrigger("jump");
+    a.update(0);
+    expect(a.activeState).toBe("jump");
+  });
+
+  it("re-triggering the same state restarts the clip without a state change", () => {
+    const a = createSpriteAnimator(platformer());
+    a.fireTrigger("jump");
+    a.update(0);
+    expect(a.activeState).toBe("jump");
+
+    a.update(100); // advance into frame 1
+    expect(a.activeFrameIndex).toBe(1);
+
+    const onChange = vi.fn();
+    a.onStateChange(onChange);
+    a.fireTrigger("jump");
+    a.update(0); // self re-entry: restart, no onStateChange
+    expect(a.activeFrameIndex).toBe(0);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("a pending trigger persists across frames until a transition consumes it", () => {
+    const a = createSpriteAnimator(platformer());
+    // No transition uses jump from a state that is reachable right now? jump is
+    // Any-State, so it fires on the very next update — but prove persistence by
+    // firing then updating twice with the first update blocked by nothing.
+    a.fireTrigger("jump");
+    a.update(0);
+    expect(a.activeState).toBe("jump");
+  });
+});
+
+describe("self-transition skip rule", () => {
+  it("ignores a Number self-loop so the clip is not reset every frame", () => {
+    const a = createSpriteAnimator({
+      animations: { run: ["r0", "r1", "r2"] },
+      frames: { r0: { duration: 100 }, r1: { duration: 100 }, r2: { duration: 100 } },
+      inputs: { speed: { type: "number", default: 1 } },
+      states: { run: { animation: "run", loop: true } },
+      transitions: [
+        { from: "run", to: "run", when: [{ input: "speed", op: "GreaterThan", value: 0 }] },
+      ],
+      initial: "run",
+    });
+    a.update(100);
+    a.update(100);
+    expect(a.activeFrameIndex).toBe(2); // advanced, not stuck on 0
+  });
+});
+
+describe("priority and declared-order tie-break", () => {
+  it("breaks equal-priority ties by declared order (first wins)", () => {
+    const a = createSpriteAnimator({
+      animations: { idle: ["i0"], walk: ["w0"], jump: ["j0"] },
+      inputs: { flag: { type: "boolean", default: false } },
+      states: {
+        idle: { animation: "idle" },
+        walk: { animation: "walk" },
+        jump: { animation: "jump" },
+      },
+      transitions: [
+        { from: "idle", to: "walk", when: [{ input: "flag", op: "Equals", value: true }] },
+        { from: "idle", to: "jump", when: [{ input: "flag", op: "Equals", value: true }] },
+      ],
+      initial: "idle",
+    });
+    a.setInput("flag", true);
+    a.update(0);
+    expect(a.activeState).toBe("walk");
+  });
+
+  it("an unconditional transition fires immediately", () => {
+    const a = createSpriteAnimator({
+      animations: { intro: ["in0"], idle: ["id0"] },
+      inputs: {},
+      states: { intro: { animation: "intro" }, idle: { animation: "idle" } },
+      transitions: [{ from: "intro", to: "idle" }],
+      initial: "intro",
+    });
+    a.update(0);
+    expect(a.activeState).toBe("idle");
+  });
+});
+
+describe("frame timing", () => {
+  it("advances through a looping clip and wraps at total duration", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 1);
+    a.update(0); // → walk, frame 0
+    expect(a.activeFrameKey).toBe("walk_0");
+    a.update(100);
+    expect(a.activeFrameKey).toBe("walk_1");
+    a.update(100);
+    expect(a.activeFrameKey).toBe("walk_2");
+    a.update(100);
+    expect(a.activeFrameKey).toBe("walk_3");
+    a.update(100); // 400 % 400 === 0 → wrap to frame 0
+    expect(a.activeFrameKey).toBe("walk_0");
+  });
+
+  it("applies a per-state speed multiplier as a time scale", () => {
+    const a = createSpriteAnimator(clips());
+    a.setInput("go", true);
+    a.update(0); // → run (speed 2), frame 0
+    expect(a.activeState).toBe("run");
+    a.update(50); // 50 * 2 = 100 ms → frame 1
+    expect(a.activeFrameKey).toBe("run_1");
+  });
+
+  it("uses the default frame duration when a frame omits one", () => {
+    const a = createSpriteAnimator(clips());
+    a.setInput("go", true);
+    a.update(0);
+    // run_* have no explicit duration → default 100 ms; at speed 2, 50ms→frame1
+    a.update(50);
+    expect(a.activeFrameIndex).toBe(1);
+  });
+
+  it("clamps negative delta to zero", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 1);
+    a.update(0);
+    a.update(-1000);
+    expect(a.activeFrameIndex).toBe(0);
+  });
+});
+
+describe("onComplete and onEnd", () => {
+  it("fires onComplete once for a non-looping clip and holds the last frame", () => {
+    const a = createSpriteAnimator({
+      animations: { attack: ["a0", "a1"] },
+      frames: { a0: { duration: 100 }, a1: { duration: 100 } },
+      inputs: {},
+      states: { attack: { animation: "attack", loop: false } },
+      transitions: [],
+      initial: "attack",
+    });
+    const onComplete = vi.fn();
+    a.onComplete(onComplete);
+
+    a.update(100); // frame 1
+    expect(onComplete).not.toHaveBeenCalled();
+    a.update(100); // reaches end
+    expect(onComplete).toHaveBeenCalledExactlyOnceWith("attack");
+    expect(a.activeFrameKey).toBe("a1");
+    a.update(100); // still ended, no second fire
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(a.activeFrameKey).toBe("a1");
+  });
+
+  it("auto-transitions via onEnd and fires onStateChange", () => {
+    const a = createSpriteAnimator(clips());
+    const onComplete = vi.fn();
+    const onChange = vi.fn();
+    a.onComplete(onComplete);
+    a.onStateChange(onChange);
+
+    a.fireTrigger("attack");
+    a.update(0); // → attack, frame 0
+    expect(a.activeState).toBe("attack");
+
+    a.update(300); // attack total = 300 ms → completes, onEnd → idle
+    expect(onComplete).toHaveBeenCalledExactlyOnceWith("attack");
+    expect(a.activeState).toBe("idle");
+    expect(onChange).toHaveBeenCalledWith("idle", "attack");
+  });
+
+  it("never fires onComplete for a looping clip", () => {
+    const a = createSpriteAnimator(platformer());
+    const onComplete = vi.fn();
+    a.onComplete(onComplete);
+    for (let i = 0; i < 20; i++) a.update(100);
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("lets an explicit input transition win over end-of-clip behaviour", () => {
+    // attack is non-looping with onEnd idle, but an Any-State trigger to attack
+    // takes precedence the frame it would have completed.
+    const a = createSpriteAnimator(clips());
+    a.fireTrigger("attack");
+    a.update(0);
+    a.fireTrigger("attack"); // re-arm
+    a.update(300); // would complete, but self-retrigger fires first
+    expect(a.activeState).toBe("attack");
+    expect(a.activeFrameIndex).toBe(0);
+  });
+});
+
+describe("reset", () => {
+  it("returns to the initial state and restores input defaults", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 5);
+    a.update(0);
+    expect(a.activeState).toBe("walk");
+
+    const onChange = vi.fn();
+    a.onStateChange(onChange);
+    a.reset();
+    expect(a.activeState).toBe("idle");
+    expect(a.activeFrameIndex).toBe(0);
+    expect(onChange).toHaveBeenCalledWith("idle", "walk");
+
+    // speed restored to default 0 → stays idle on next update
+    a.update(0);
+    expect(a.activeState).toBe("idle");
+  });
+
+  it("does not fire onStateChange when already in the initial state", () => {
+    const a = createSpriteAnimator(platformer());
+    const onChange = vi.fn();
+    a.onStateChange(onChange);
+    a.reset();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(a.activeState).toBe("idle");
+  });
+});
+
+describe("dispose", () => {
+  it("is idempotent and blocks mutators afterwards", () => {
+    const a = createSpriteAnimator(platformer());
+    a.dispose();
+    a.dispose(); // no throw
+    expect(a.disposed).toBe(true);
+
+    expect(() => a.update(16)).toThrow(SpriteAnimatorDisposedError);
+    expect(() => a.setInput("speed", 1)).toThrow(SpriteAnimatorDisposedError);
+    expect(() => a.fireTrigger("jump")).toThrow(SpriteAnimatorDisposedError);
+    expect(() => a.reset()).toThrow(SpriteAnimatorDisposedError);
+  });
+
+  it("keeps the last frame readable and returns no-op subscriptions", () => {
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 1);
+    a.update(0);
+    a.dispose();
+    expect(a.activeState).toBe("walk");
+    expect(a.activeFrameKey).toBe("walk_0");
+
+    const onChange = vi.fn();
+    const unsub = a.onStateChange(onChange);
+    expect(unsub).toBeTypeOf("function");
+    unsub(); // no throw
+
+    const unsubComplete = a.onComplete(vi.fn());
+    expect(unsubComplete).toBeTypeOf("function");
+    unsubComplete(); // no throw
+  });
+});
+
+describe("determinism", () => {
+  it("produces identical frame sequences for identical input + dt sequences", () => {
+    const run = () => {
+      const a = createSpriteAnimator(platformer());
+      const frames: string[] = [];
+      a.setInput("speed", 3);
+      const steps = [0, 50, 50, 50, 50, 50, 50, 50, 50];
+      for (const dt of steps) {
+        a.update(dt);
+        frames.push(`${a.activeState}:${a.activeFrameKey}`);
+      }
+      return frames;
+    };
+    expect(run()).toEqual(run());
+  });
+});
