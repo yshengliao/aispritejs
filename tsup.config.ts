@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     "pixi/index": "src/pixi/index.ts",
+    "atlas/index": "src/atlas/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

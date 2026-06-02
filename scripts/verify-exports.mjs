@@ -12,13 +12,23 @@ const pkg = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
 
 const failures = [];
 
-for (const [subpath, conditions] of Object.entries(pkg.exports)) {
-  for (const [condition, relPath] of Object.entries(conditions)) {
-    const abs = resolve(root, relPath);
-    try {
-      await access(abs);
-    } catch {
-      failures.push(`${subpath} → ${condition} → ${relPath} (missing)`);
+async function checkTarget(subpath, condition, relPath) {
+  const abs = resolve(root, relPath);
+  try {
+    await access(abs);
+  } catch {
+    failures.push(`${subpath} → ${condition} → ${relPath} (missing)`);
+  }
+}
+
+for (const [subpath, target] of Object.entries(pkg.exports)) {
+  // A subpath maps either to a conditions object ({ types, import, require })
+  // or directly to a file string (e.g. a shipped JSON schema).
+  if (typeof target === "string") {
+    await checkTarget(subpath, "default", target);
+  } else {
+    for (const [condition, relPath] of Object.entries(target)) {
+      await checkTarget(subpath, condition, relPath);
     }
   }
 }

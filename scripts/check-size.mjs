@@ -21,6 +21,10 @@ const budgets = {
   // external, so nothing pixi reaches the bundle. Measured at 3,881 B; budget
   // 4,200 B for a ~320 B safety margin.
   "dist/pixi/index.js": 4_200,
+  // v0.3.0 atlas parser (aispritejs/atlas). Bundles the core (splitting:false)
+  // plus parseAtlas / loadAtlas. Pure, zero-dependency, no pixi. Measured at
+  // 4,076 B; budget 4,400 B for a ~320 B safety margin.
+  "dist/atlas/index.js": 4_400,
 };
 
 const failures = [];

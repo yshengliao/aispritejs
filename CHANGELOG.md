@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `aispritejs/atlas` parser + JSON Schema (for v0.3.0)
+
+- **`parseAtlas(atlas, control?)`** and **`loadAtlas(atlas, control?)`** on the
+  new `aispritejs/atlas` subpath — turn a parsed PixiJS-v8 atlas into a
+  `SpriteGraph` (or a ready `SpriteAnimator`). The atlas supplies the universal
+  `animations` / `frames`; the input-driven control comes from the atlas itself
+  (augmented shape) or from the `control` argument.
+- **Ignores a foreign event-driven `states` block** — the FSM `{ initial,
+  definitions }` shape emitted by other tools is detected and skipped; pass an
+  `aispritejs` control block instead. Verified against the real family pipeline
+  atlas (`test/fixtures/reimu-atlas.json`).
+- **`InvalidAtlasError`** for structural problems (fail-fast); semantic problems
+  surface as `InvalidGraphError` from the core.
+- **JSON Schema** shipped at `schemas/aispritejs-graph.schema.json` (draft
+  2020-12), exported as `aispritejs/schema`, describing the input-driven graph.
+  The parser mirrors it in code, so there is no runtime schema-validator
+  dependency. Pure, zero-dependency subpath; per-subpath gzip budget added.
+
 ### Added — `aispritejs/pixi` adapter (for v0.2.0)
 
 - **`createPixiSpriteAnimator(sprite, graph, textures, options?)`** on the new

@@ -26,6 +26,7 @@ Key guarantees: deterministic `update(dt)` (identical inputs + Δt ⇒ identical
 - [src/sprite/emitter.ts](src/sprite/emitter.ts): the package's own minimal typed signal with `{ signal, once }` — no `aieventjs` import.
 - [src/sprite/errors.ts](src/sprite/errors.ts): the four named error classes.
 - [src/pixi/animator.ts](src/pixi/animator.ts): the `aispritejs/pixi` adapter — `createPixiSpriteAnimator(sprite, graph, textures, options?)` swaps a PIXI.Sprite's texture to the active frame and applies the atlas anchor. Imports `pixi.js` **type-only** (optional peer); the core never imports it. Subpath: `aispritejs/pixi`.
+- [src/atlas/parse.ts](src/atlas/parse.ts): the `aispritejs/atlas` parser — `parseAtlas(atlas, control?)` / `loadAtlas(atlas, control?)` turn a PixiJS-v8 atlas into a `SpriteGraph` / `SpriteAnimator`, ignoring any foreign event-driven `states` block. `InvalidAtlasError`, `SpriteControl`. Pure, zero-dependency. Subpath: `aispritejs/atlas`. JSON Schema at [schemas/aispritejs-graph.schema.json](schemas/aispritejs-graph.schema.json), exported as `aispritejs/schema`.
 
 ## Examples
 
@@ -34,6 +35,6 @@ Key guarantees: deterministic `update(dt)` (identical inputs + Δt ⇒ identical
 ## Quality gates
 
 - [.github/workflows/ci.yml](.github/workflows/ci.yml): Node 20 + 22 matrix; typecheck, lint (biome), coverage (vitest + @vitest/coverage-v8 at 95/90/100/100 thresholds, met at 100% across the board), build (tsup → ESM + CJS + .d.ts), exports verification, size budget, and llms drift check.
-- [scripts/check-size.mjs](scripts/check-size.mjs): per-subpath gzip budget (core ≤ 3.8 KB; `aispritejs/pixi` ≤ 4.2 KB, core + thin adapter, pixi.js external).
+- [scripts/check-size.mjs](scripts/check-size.mjs): per-subpath gzip budget (core ≤ 3.8 KB; `aispritejs/pixi` ≤ 4.2 KB, pixi.js external; `aispritejs/atlas` ≤ 4.4 KB, zero-dependency).
 - [scripts/verify-exports.mjs](scripts/verify-exports.mjs): asserts every `package.json#exports` entry resolves to a real file in `dist/`.
 - [.github/workflows/publish.yml](.github/workflows/publish.yml): OIDC trusted-publisher + provenance on tag-push.

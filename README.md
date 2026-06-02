@@ -100,6 +100,25 @@ It swaps the texture only when the active frame changes, and honours per-frame `
 
 This **input-driven** model is deliberately distinct from an event-driven FSM. `aispritejs` ingests only the universal `frames` / `animations`; the `inputs` / `states` / `transitions` are its own. If an atlas carries a foreign event-driven `states` block from another tool, `aispritejs` ignores it.
 
+## Loading an atlas — `aispritejs/atlas`
+
+The `aispritejs/atlas` subpath turns a parsed PixiJS-v8 atlas into a graph (or a ready animator). It is pure and zero-dependency.
+
+```ts
+import { parseAtlas, loadAtlas } from "aispritejs/atlas";
+
+// Augmented atlas (the shape above, with inputs/states/transitions inline):
+const anim = loadAtlas(atlasJson);
+
+// Real atlas whose own `states` block is foreign (event-driven) or absent —
+// supply the input-driven control separately; the foreign block is ignored:
+const graph = parseAtlas(atlasJson, { inputs, states, transitions, initial });
+```
+
+- `parseAtlas(atlas, control?)` → `SpriteGraph`; `loadAtlas(atlas, control?)` → `SpriteAnimator` (parse + create in one fail-fast step).
+- A foreign event-driven `states` block (the `{ initial, definitions }` FSM shape) is **detected and ignored** — pass an `aispritejs` control block instead. Structural problems throw `InvalidAtlasError`; semantic ones surface as `InvalidGraphError` from the core.
+- The canonical structure is published as a JSON Schema at [`schemas/aispritejs-graph.schema.json`](schemas/aispritejs-graph.schema.json) (also exported as `aispritejs/schema`) for editor and CI validation; the parser mirrors it in code, so there is no runtime schema-validator dependency.
+
 ## Decoupling (P0)
 
 - **Zero cross-package imports** — `aispritejs` does not import `aifsmjs`, `aieventjs`, or any sibling. It has its own minimal typed emitter.
@@ -181,8 +200,9 @@ pnpm example:platformer
 
 - **v0.1.0 — renderer-agnostic core** (released): inputs, the transition graph, and the `createSpriteAnimator` engine. Zero runtime dependencies; the root import graph contains no `pixi.js`.
 - **Unreleased — `aispritejs/pixi` adapter** (module 4): `createPixiSpriteAnimator` binding the core to a PixiJS v8 `Sprite`, honouring per-frame `duration` + atlas `anchor`. `pixi.js` is an optional, type-only peer.
+- **Unreleased — `aispritejs/atlas` parser + JSON Schema** (module 3): `parseAtlas` / `loadAtlas` consume a PixiJS-v8 atlas (incl. the real family pipeline output), ignore any foreign event-driven `states`, and validate fail-fast. Pure, zero-dependency.
 
-The atlas parser + JSON Schema (module 3) is the next phase. Versioning and release tags are cut by the maintainer.
+All roadmap modules (1–4) are now implemented on the default branch. Versioning and release tags are cut by the maintainer.
 
 ## Roadmap
 

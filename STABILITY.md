@@ -46,6 +46,11 @@ maintainer.
   `MissingTextureError`, `PixiSpriteAnimator`, `PixiSpriteAnimatorOptions`,
   `TextureMap`. `pixi.js` is an **optional**, type-only `peerDependency`,
   imported only by this subpath.
+- **`aispritejs/atlas`** (for v0.3.0) — `parseAtlas(atlas, control?)`,
+  `loadAtlas(atlas, control?)`, `InvalidAtlasError`, `SpriteControl`. Consumes a
+  PixiJS-v8 atlas, ignores any foreign event-driven `states` block, and fails
+  fast. JSON Schema shipped at `schemas/aispritejs-graph.schema.json` (exported
+  as `aispritejs/schema`). Pure, zero-dependency.
 
 ## Experimental
 
@@ -53,8 +58,5 @@ None as of 0.1.0.
 
 ## Draft (planned, not implemented)
 
-API sketched, not shipped. May change before release.
-
-- **Atlas parser + JSON Schema** (for v0.3.0) — load a PixiJS-v8-native atlas
-  plus the `aispritejs` control block, validate against a published JSON Schema,
-  and ignore any foreign event-driven `states` block.
+All roadmap modules (1–4) are implemented. No draft APIs outstanding; the next
+milestone is the 1.0.0 public-API freeze.

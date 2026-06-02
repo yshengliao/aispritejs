@@ -100,6 +100,25 @@ view.fireTrigger("jump");
 
 這個**輸入驅動**模型刻意與事件驅動 FSM 區隔。`aispritejs` 只吃通用的 `frames` / `animations`；`inputs` / `states` / `transitions` 屬於它自己。若某個 atlas 帶有來自其他工具的事件驅動 `states` 區塊，`aispritejs` 會忽略它。
 
+## 載入 atlas —— `aispritejs/atlas`
+
+`aispritejs/atlas` 子路徑把已解析的 PixiJS v8 atlas 轉成 graph（或現成的 animator）。它是純函式且零相依。
+
+```ts
+import { parseAtlas, loadAtlas } from "aispritejs/atlas";
+
+// 增強型 atlas（上述形狀，inputs/states/transitions 內嵌）：
+const anim = loadAtlas(atlasJson);
+
+// 真實 atlas 的 `states` 是 foreign（事件驅動）或不存在 —— 另外傳入輸入驅動
+// 控制區塊；foreign 區塊會被忽略：
+const graph = parseAtlas(atlasJson, { inputs, states, transitions, initial });
+```
+
+- `parseAtlas(atlas, control?)` → `SpriteGraph`；`loadAtlas(atlas, control?)` → `SpriteAnimator`（一步 parse + create，fail-fast）。
+- foreign 事件驅動 `states`（`{ initial, definitions }` 的 FSM 形狀）會被**偵測並忽略** —— 改傳 `aispritejs` 控制區塊。結構問題丟出 `InvalidAtlasError`；語意問題由核心丟出 `InvalidGraphError`。
+- 標準結構以 JSON Schema 發佈於 [`schemas/aispritejs-graph.schema.json`](schemas/aispritejs-graph.schema.json)（亦匯出為 `aispritejs/schema`），供編輯器與 CI 驗證；parser 以程式碼鏡像它，因此無 runtime schema-validator 相依。
+
 ## 核心 API
 
 公開介面是單一工廠函式，加上型別與具名錯誤。**不匯出任何 class 建構子** —— `createSpriteAnimator` 回傳一個 `SpriteAnimator`。
@@ -181,8 +200,9 @@ pnpm example:platformer
 
 - **v0.1.0 —— 與渲染器無關的核心**（已發佈）：輸入、轉移圖與 `createSpriteAnimator` 引擎。零執行期相依；根 import 圖不含 `pixi.js`。
 - **未發佈 —— `aispritejs/pixi` 轉接器**（模組 4）：`createPixiSpriteAnimator` 把核心綁到 PixiJS v8 `Sprite`，尊重逐影格 `duration` 與 atlas `anchor`。`pixi.js` 是選用、type-only 的 peer。
+- **未發佈 —— `aispritejs/atlas` parser + JSON Schema**（模組 3）：`parseAtlas` / `loadAtlas` 消化 PixiJS v8 atlas（含真實家族 pipeline 產出），忽略 foreign 事件驅動 `states`，並 fail-fast 驗證。純函式、零相依。
 
-atlas parser + JSON Schema（模組 3）是下一階段。版本號與發佈 tag 由維護者切。
+roadmap 模組 1–4 皆已於預設分支實作。版本號與發佈 tag 由維護者切。
 
 ## Roadmap
 

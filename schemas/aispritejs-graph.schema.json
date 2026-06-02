@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/yshengliao/aispritejs/schemas/aispritejs-graph.schema.json",
+  "title": "aispritejs input-driven sprite graph",
+  "description": "The aispritejs control graph augmenting a PixiJS-v8-native atlas. The universal `animations` / `frames` blocks plus the input-driven `inputs` / `states` / `transitions`. A foreign event-driven `states` block (the FSM `{ initial, definitions }` shape) is NOT described here and is ignored by the parser. The parser mirrors these constraints in code (fail-fast); this file is the canonical spec for editors and external validation.",
+  "type": "object",
+  "required": ["animations", "inputs", "states", "transitions"],
+  "properties": {
+    "meta": {
+      "description": "PixiJS atlas metadata (image, size, scale). Ignored by aispritejs.",
+      "type": "object"
+    },
+    "animations": {
+      "description": "Animation name -> ordered list of frame keys (each non-empty).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" },
+        "minItems": 1
+      }
+    },
+    "frames": {
+      "description": "Per-frame data keyed by frame key. Only `duration` (ms, > 0) is read by the core; other PixiJS fields are ignored.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "duration": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    },
+    "inputs": {
+      "description": "Input declarations keyed by input name.",
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "const": "number" },
+              "default": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "const": "boolean" },
+              "default": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "const": "trigger" }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "states": {
+      "description": "State declarations keyed by state name.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["animation"],
+        "properties": {
+          "animation": { "type": "string" },
+          "loop": { "type": "boolean" },
+          "speed": { "type": "number", "exclusiveMinimum": 0 },
+          "onEnd": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "transitions": {
+      "description": "Transition edges, evaluated every update.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {
+            "description": "Source state name, or \"*\" for an Any-State transition.",
+            "type": "string"
+          },
+          "to": { "type": "string" },
+          "priority": { "type": "integer" },
+          "when": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["input", "op"],
+              "properties": {
+                "input": { "type": "string" },
+                "op": {
+                  "enum": ["Equals", "NotEquals", "GreaterThan", "LessThan", "Trigger"]
+                },
+                "value": {
+                  "type": ["number", "boolean"]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "initial": {
+      "description": "Initial state name. Defaults to the first declared state.",
+      "type": "string"
+    },
+    "defaultFrameDuration": {
+      "description": "Fallback frame duration (ms, > 0) for frames without explicit timing. Defaults to 100.",
+      "type": "number",
+      "exclusiveMinimum": 0
+    }
+  }
+}

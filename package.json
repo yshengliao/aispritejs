@@ -43,10 +43,17 @@
       "types": "./dist/pixi/index.d.ts",
       "import": "./dist/pixi/index.js",
       "require": "./dist/pixi/index.cjs"
-    }
+    },
+    "./atlas": {
+      "types": "./dist/atlas/index.d.ts",
+      "import": "./dist/atlas/index.js",
+      "require": "./dist/atlas/index.cjs"
+    },
+    "./schema": "./schemas/aispritejs-graph.schema.json"
   },
   "files": [
     "dist",
+    "schemas",
     "README.md",
     "README_ZHTW.md",
     "LICENSE",
