@@ -16,6 +16,11 @@ const budgets = {
   // the work, matching aifsmjs). Measured at 3,481 B in v0.1.0; budget set to
   // 3,800 B for a ~320 B safety margin. Tighten in a patch if it shrinks.
   "dist/index.js": 3_800,
+  // v0.2.0 PixiJS adapter (aispritejs/pixi). Bundles the core (splitting:false)
+  // plus the thin texture/anchor-swapping adapter; pixi.js is type-only and
+  // external, so nothing pixi reaches the bundle. Measured at 3,881 B; budget
+  // 4,200 B for a ~320 B safety margin.
+  "dist/pixi/index.js": 4_200,
 };
 
 const failures = [];

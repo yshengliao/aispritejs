@@ -35,6 +35,18 @@ These semantics are part of the stable surface and are pinned by tests:
 - `defaultFrameDuration` is `100` ms; `speed` defaults to `1`.
 - Determinism: identical input + `dt` sequences ⇒ identical frame sequences.
 
+## Implemented, pending release
+
+API implemented and tested on the default branch; settled, releases cut by the
+maintainer.
+
+- **`aispritejs/pixi`** (for v0.2.0) — `createPixiSpriteAnimator(sprite, graph,
+  textures, options?)` binding the core to a PixiJS v8 `Sprite`, honouring
+  per-frame `duration` and the atlas `anchor` (`texture.defaultAnchor`).
+  `MissingTextureError`, `PixiSpriteAnimator`, `PixiSpriteAnimatorOptions`,
+  `TextureMap`. `pixi.js` is an **optional**, type-only `peerDependency`,
+  imported only by this subpath.
+
 ## Experimental
 
 None as of 0.1.0.
@@ -43,10 +55,6 @@ None as of 0.1.0.
 
 API sketched, not shipped. May change before release.
 
-- **`aispritejs/pixi`** (v0.2.0) — `createPixiSpriteAnimator(sprite, graph,
-  spritesheet)` binding the core to a PixiJS v8 `Sprite`, honouring per-frame
-  `duration` and the atlas `anchor`. `pixi.js` will be an **optional**
-  `peerDependency`, imported only by this subpath.
-- **Atlas parser + JSON Schema** (v0.3.0) — load a PixiJS-v8-native atlas plus
-  the `aispritejs` control block, validate against a published JSON Schema, and
-  ignore any foreign event-driven `states` block.
+- **Atlas parser + JSON Schema** (for v0.3.0) — load a PixiJS-v8-native atlas
+  plus the `aispritejs` control block, validate against a published JSON Schema,
+  and ignore any foreign event-driven `states` block.

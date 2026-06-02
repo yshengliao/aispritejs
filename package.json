@@ -38,6 +38,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./pixi": {
+      "types": "./dist/pixi/index.d.ts",
+      "import": "./dist/pixi/index.js",
+      "require": "./dist/pixi/index.cjs"
     }
   },
   "files": [
@@ -63,11 +68,20 @@
     "example:platformer": "tsx examples/01-platformer-inputs/index.ts",
     "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm coverage && pnpm build && pnpm verify:exports && pnpm verify:llms && pnpm check:size"
   },
+  "peerDependencies": {
+    "pixi.js": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pixi.js": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.7",
     "fast-check": "^4.8.0",
+    "pixi.js": "^8.18.1",
     "tsup": "^8.3.0",
     "tsx": "^4.22.3",
     "typescript": "^5.6.0",

@@ -49,18 +49,26 @@ anim.update(deltaMs);
 const frameKey = anim.activeFrameKey; // 交給你的渲染器
 ```
 
-## 快速開始 —— PixiJS v8 轉接器（規劃中，v0.2.0）
+## 快速開始 —— PixiJS v8 轉接器
 
-> `aispritejs/pixi` 子路徑列於 roadmap（見 [ROADMAP.md](ROADMAP.md)）。下方是預期的 API 形狀；`pixi.js` 會是**選用的** `peerDependency`，僅由轉接器 import —— 核心永不碰它。
+`aispritejs/pixi` 子路徑把核心綁到一個 `PIXI.Sprite`。`pixi.js` 是**選用的** `peerDependency`，且僅以 **type-only** 方式 import —— 編譯後的轉接器不含任何 `pixi.js` runtime require，核心也永不碰它。
 
 ```ts
 import { createPixiSpriteAnimator } from "aispritejs/pixi"; // pixi.js 是選用 peer
 
+// `textures` 是 PIXI.Spritesheet（或 frame-key → Texture 的 map），需涵蓋 graph
+// 參照的每一格 —— 缺鍵會丟出 MissingTextureError。
 const view = createPixiSpriteAnimator(sprite, graph, spritesheet);
+
 // 每幀：
-view.update(deltaMs); // 把綁定的 PIXI texture 換成當前影格，
-                      // 並尊重逐影格 duration 與 atlas anchor
+view.update(deltaMs); // 把綁定 sprite 的 texture 換成當前影格，
+                      // 並套用該格的 atlas anchor（texture.defaultAnchor）
+
+view.setInput("speed", 4);
+view.fireTrigger("jump");
 ```
+
+它只在當前影格改變時換 texture，並尊重逐影格 `duration`（透過核心）與非置中／腳底樞軸（透過 `texture.defaultAnchor`；傳 `{ applyAnchor: false }` 可自行管理 anchor）。`view.sprite` 是綁定的 sprite；`dispose()` 拆除核心但不銷毀 sprite。
 
 ## 資料格式（atlas）
 
@@ -171,7 +179,10 @@ pnpm example:platformer
 
 ## 狀態
 
-**v0.1.0 —— 與渲染器無關的核心。** [roadmap](ROADMAP.md) 的模組 1–2：輸入、轉移圖與 `createSpriteAnimator` 引擎。零執行期相依；根 import 圖不含 `pixi.js`。PixiJS 轉接器（`aispritejs/pixi`）與 atlas parser + JSON Schema 是接下來的階段。
+- **v0.1.0 —— 與渲染器無關的核心**（已發佈）：輸入、轉移圖與 `createSpriteAnimator` 引擎。零執行期相依；根 import 圖不含 `pixi.js`。
+- **未發佈 —— `aispritejs/pixi` 轉接器**（模組 4）：`createPixiSpriteAnimator` 把核心綁到 PixiJS v8 `Sprite`，尊重逐影格 `duration` 與 atlas `anchor`。`pixi.js` 是選用、type-only 的 peer。
+
+atlas parser + JSON Schema（模組 3）是下一階段。版本號與發佈 tag 由維護者切。
 
 ## Roadmap
 

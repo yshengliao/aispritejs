@@ -49,20 +49,26 @@ anim.update(deltaMs);
 const frameKey = anim.activeFrameKey; // hand to your renderer
 ```
 
-## Quick start — PixiJS v8 adapter (planned, v0.2.0)
+## Quick start — PixiJS v8 adapter
 
-> The `aispritejs/pixi` subpath is on the roadmap (see [ROADMAP.md](ROADMAP.md)).
-> The shape below is the intended API; `pixi.js` will be an **optional**
-> `peerDependency`, imported only by the adapter — never by the core.
+The `aispritejs/pixi` subpath binds the core to a `PIXI.Sprite`. `pixi.js` is an **optional** `peerDependency`, imported **type-only** — the built adapter contains no runtime `pixi.js` require, and the core never imports it.
 
 ```ts
 import { createPixiSpriteAnimator } from "aispritejs/pixi"; // pixi.js is an OPTIONAL peer
 
+// `textures` is a PIXI.Spritesheet (or a frame-key → Texture map) covering
+// every frame the graph references — missing keys throw MissingTextureError.
 const view = createPixiSpriteAnimator(sprite, graph, spritesheet);
+
 // each frame:
-view.update(deltaMs); // swaps the bound PIXI texture to the active frame,
-                      // honouring per-frame duration and the atlas anchor
+view.update(deltaMs); // swaps the bound sprite's texture to the active frame,
+                      // applying that frame's atlas anchor (texture.defaultAnchor)
+
+view.setInput("speed", 4);
+view.fireTrigger("jump");
 ```
+
+It swaps the texture only when the active frame changes, and honours per-frame `duration` (via the core) and non-centre / foot pivots (via `texture.defaultAnchor`; pass `{ applyAnchor: false }` to manage the anchor yourself). `view.sprite` is the bound sprite; `dispose()` tears down the core without destroying the sprite.
 
 ## Data format (atlas)
 
@@ -173,7 +179,10 @@ pnpm example:platformer
 
 ## Status
 
-**v0.1.0 — renderer-agnostic core.** Modules 1–2 of the [roadmap](ROADMAP.md): inputs, the transition graph, and the `createSpriteAnimator` engine. Zero runtime dependencies; the root import graph contains no `pixi.js`. The PixiJS adapter (`aispritejs/pixi`) and the atlas parser + JSON Schema are the next phases.
+- **v0.1.0 — renderer-agnostic core** (released): inputs, the transition graph, and the `createSpriteAnimator` engine. Zero runtime dependencies; the root import graph contains no `pixi.js`.
+- **Unreleased — `aispritejs/pixi` adapter** (module 4): `createPixiSpriteAnimator` binding the core to a PixiJS v8 `Sprite`, honouring per-frame `duration` + atlas `anchor`. `pixi.js` is an optional, type-only peer.
+
+The atlas parser + JSON Schema (module 3) is the next phase. Versioning and release tags are cut by the maintainer.
 
 ## Roadmap
 

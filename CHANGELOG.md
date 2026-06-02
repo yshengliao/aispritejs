@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `aispritejs/pixi` adapter (for v0.2.0)
+
+- **`createPixiSpriteAnimator(sprite, graph, textures, options?)`** on the new
+  `aispritejs/pixi` subpath — binds the renderer-agnostic core to a PixiJS v8
+  `Sprite`. On each `update(dt)` it runs the core machine and, when the active
+  frame changes, swaps the sprite's texture and applies that frame's atlas
+  anchor (`texture.defaultAnchor`) — preserving non-centre / foot pivots
+  (`{ applyAnchor: false }` opts out). Accepts a `Spritesheet` or a frame-key →
+  `Texture` map.
+- **`MissingTextureError`** — fail-fast at construction when a frame key the
+  graph references has no texture (carries `.keys`).
+- `pixi.js` declared as an **optional** `peerDependency`
+  (`peerDependenciesMeta.optional`). The adapter imports it **type-only**, so
+  the built subpath contains no runtime `pixi.js` require; the core never
+  imports the adapter. Per-subpath gzip budget added for `dist/pixi/index.js`.
+
 ## [0.1.0] - 2026-06-03
 
 Initial release — the renderer-agnostic core (modules 1–2 of the roadmap).
