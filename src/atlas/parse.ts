@@ -103,6 +103,13 @@ export function parseAtlas(atlas: unknown, control?: SpriteControl): SpriteGraph
   if (frames !== undefined && !isObject(frames)) {
     throw new InvalidAtlasError("`frames`, if present, must be an object keyed by frame key");
   }
+  if (isObject(frames)) {
+    for (const [key, entry] of Object.entries(frames)) {
+      if (!isObject(entry)) {
+        throw new InvalidAtlasError(`frame entry "${key}" must be an object, got ${typeof entry}`);
+      }
+    }
+  }
 
   let resolved: SpriteControl;
   if (control) {
@@ -118,10 +125,18 @@ export function parseAtlas(atlas: unknown, control?: SpriteControl): SpriteGraph
         "atlas has no aispritejs control block (inputs/states/transitions); pass one as the second argument",
       );
     }
+    const rawTransitions = atlas.transitions as unknown[];
+    for (let i = 0; i < rawTransitions.length; i++) {
+      if (!isObject(rawTransitions[i])) {
+        throw new InvalidAtlasError(
+          `transitions[${i}] must be an object, got ${typeof rawTransitions[i]}`,
+        );
+      }
+    }
     resolved = {
       inputs: atlas.inputs as Record<string, InputDef>,
       states: atlas.states as Record<string, StateDef>,
-      transitions: atlas.transitions as readonly TransitionDef[],
+      transitions: rawTransitions as readonly TransitionDef[],
       ...(typeof atlas.initial === "string" ? { initial: atlas.initial } : {}),
       ...(typeof atlas.defaultFrameDuration === "number"
         ? { defaultFrameDuration: atlas.defaultFrameDuration }

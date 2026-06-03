@@ -151,4 +151,26 @@ describe("graph validation", () => {
       }),
     ).not.toThrow();
   });
+
+  // Prototype-key hardening: Object.prototype names must never be accepted as
+  // valid state, animation, or input references — they are not own properties.
+  it("rejects a prototype-key initial state (Object.hasOwn hardening)", () => {
+    expectInvalid({ ...base(), initial: "toString" });
+  });
+
+  it("rejects a state referencing a prototype-key animation (Object.hasOwn hardening)", () => {
+    expectInvalid({
+      ...base(),
+      states: { idle: { animation: "constructor" } },
+    });
+  });
+
+  it("rejects a transition condition on a prototype-key input name (Object.hasOwn hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "hasOwnProperty", op: "Trigger" }] },
+      ],
+    });
+  });
 });

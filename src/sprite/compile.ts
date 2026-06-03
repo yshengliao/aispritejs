@@ -74,7 +74,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   }
 
   const initial = graph.initial ?? stateEntries[0]![0];
-  if (!(initial in graph.states)) {
+  if (!Object.hasOwn(graph.states, initial)) {
     throw new InvalidGraphError(`initial state "${initial}" is not declared`);
   }
 
@@ -82,7 +82,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   const states = new Map<string, CompiledState>();
   for (const [name, st] of stateEntries) {
     const frameKeys = graph.animations[st.animation];
-    if (frameKeys === undefined) {
+    if (frameKeys === undefined || !Object.hasOwn(graph.animations, st.animation)) {
       throw new InvalidGraphError(`state "${name}" references unknown animation "${st.animation}"`);
     }
     if (frameKeys.length === 0) {
@@ -98,7 +98,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
         `state "${name}" loops, so onEnd "${st.onEnd}" would never fire; set loop:false or drop onEnd`,
       );
     }
-    if (st.onEnd !== undefined && !(st.onEnd in graph.states)) {
+    if (st.onEnd !== undefined && !Object.hasOwn(graph.states, st.onEnd)) {
       throw new InvalidGraphError(`state "${name}" onEnd target "${st.onEnd}" is not declared`);
     }
 
@@ -124,10 +124,10 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   // --- compile transitions ------------------------------------------------
   const compiled: CompiledTransition[] = [];
   graph.transitions.forEach((t, order) => {
-    if (t.from !== "*" && !(t.from in graph.states)) {
+    if (t.from !== "*" && !Object.hasOwn(graph.states, t.from)) {
       throw new InvalidGraphError(`transition #${order} from "${t.from}" is not a declared state`);
     }
-    if (!(t.to in graph.states)) {
+    if (!Object.hasOwn(graph.states, t.to)) {
       throw new InvalidGraphError(`transition #${order} to "${t.to}" is not a declared state`);
     }
 
@@ -135,7 +135,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
     const triggers: string[] = [];
     for (const c of t.when ?? []) {
       const def = graph.inputs[c.input];
-      if (def === undefined) {
+      if (def === undefined || !Object.hasOwn(graph.inputs, c.input)) {
         throw new InvalidGraphError(
           `transition #${order} condition references unknown input "${c.input}"`,
         );

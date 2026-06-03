@@ -12,7 +12,7 @@ Key guarantees: deterministic `update(dt)` (identical inputs + Δt ⇒ identical
 - [README_ZHTW.md](README_ZHTW.md): Traditional Chinese mirror of the canonical README.
 - [ROADMAP.md](ROADMAP.md): phased plan (v0.1.0 core → v0.2.0 PixiJS adapter → v0.3.0 atlas parser + JSON Schema → 1.0 freeze) and design invariants.
 - [STABILITY.md](STABILITY.md): stability tier of every public symbol plus the pinned behavioural contract.
-- [CHANGELOG.md](CHANGELOG.md): Keep a Changelog format; the 0.1.0 entry covers the core surface and CI guarantees.
+- [CHANGELOG.md](CHANGELOG.md): Keep a Changelog format; the 0.1.1 entry notes SLSA build provenance (OIDC publish); the 0.1.0 entry covers the full core surface and CI guarantees.
 - [CONTRIBUTING.md](CONTRIBUTING.md): quick-start commands, design principles, commit & PR style.
 - [llms-full.txt](llms-full.txt): README + CHANGELOG + CONTRIBUTING + examples index concatenated into one file — load this when an AI agent needs the full context in a single fetch.
 

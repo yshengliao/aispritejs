@@ -254,9 +254,15 @@ export interface SpriteAnimator {
   reset(): void;
   /** Release all listeners. Idempotent; subsequent mutators throw. */
   dispose(): void;
-  /** Subscribe to state changes. Returns an unsubscribe. */
+  /**
+   * Subscribe to state changes. Returns an unsubscribe.
+   * @remarks After `dispose()` this returns a no-op unsubscribe and registers no listener.
+   */
   onStateChange(handler: StateChangeHandler, options?: ListenerOptions): Unsubscribe;
-  /** Subscribe to non-looping clip completions. Returns an unsubscribe. */
+  /**
+   * Subscribe to non-looping clip completions. Returns an unsubscribe.
+   * @remarks After `dispose()` this returns a no-op unsubscribe and registers no listener.
+   */
   onComplete(handler: CompleteHandler, options?: ListenerOptions): Unsubscribe;
   /** Current state name. */
   readonly activeState: string;

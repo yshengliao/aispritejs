@@ -172,6 +172,28 @@ describe("parseAtlas — structural validation", () => {
     expect(graph.frames).toBeUndefined();
     expect(graph.states).toBe(control.states);
   });
+
+  it("rejects a frames block whose entry is not an object (F-3 hardening)", () => {
+    // frames:{x:null} must throw InvalidAtlasError before reaching the core.
+    expect(() =>
+      parseAtlas({ animations: { idle: ["i0"] }, frames: { i0: null } }, reimuControl),
+    ).toThrow(InvalidAtlasError);
+    expect(() =>
+      parseAtlas({ animations: { idle: ["i0"] }, frames: { i0: "bad" } }, reimuControl),
+    ).toThrow(InvalidAtlasError);
+  });
+
+  it("rejects a transitions array whose entry is not an object (F-5 hardening)", () => {
+    // transitions:[null] must throw InvalidAtlasError before the core sees it.
+    expect(() =>
+      parseAtlas({
+        animations: { idle: ["i0"] },
+        inputs: {},
+        states: { idle: { animation: "idle" } },
+        transitions: [null],
+      }),
+    ).toThrow(InvalidAtlasError);
+  });
 });
 
 describe("loadAtlas — semantic validation", () => {
