@@ -30,8 +30,24 @@ describe("graph validation", () => {
     expectInvalid({ ...base(), defaultFrameDuration: 0 });
   });
 
+  it("rejects an infinite defaultFrameDuration", () => {
+    expect(() =>
+      createSpriteAnimator({ ...base(), defaultFrameDuration: Number.POSITIVE_INFINITY }),
+    ).toThrow(
+      new InvalidGraphError("defaultFrameDuration must be a finite number > 0, got Infinity"),
+    );
+  });
+
   it("rejects a non-positive frame duration", () => {
     expectInvalid({ ...base(), frames: { i0: { duration: -5 } } });
+  });
+
+  it("rejects an infinite frame duration", () => {
+    expect(() =>
+      createSpriteAnimator({ ...base(), frames: { i0: { duration: Number.POSITIVE_INFINITY } } }),
+    ).toThrow(
+      new InvalidGraphError(`frame "i0" duration must be a finite number > 0, got Infinity`),
+    );
   });
 
   it("rejects an unknown initial state", () => {
@@ -48,6 +64,17 @@ describe("graph validation", () => {
 
   it("rejects a non-positive state speed", () => {
     expectInvalid({ ...base(), states: { idle: { animation: "idle", speed: 0 } } });
+  });
+
+  it("rejects an infinite state speed", () => {
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        states: { idle: { animation: "idle", speed: Number.POSITIVE_INFINITY } },
+      }),
+    ).toThrow(
+      new InvalidGraphError(`state "idle" speed must be a finite number > 0, got Infinity`),
+    );
   });
 
   it("rejects onEnd combined with loop:true", () => {

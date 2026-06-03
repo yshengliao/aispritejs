@@ -14,7 +14,7 @@
 
 ## Verdict / Summary
 
-aispritejs is a well-structured, zero-dependency visual animator with strict TypeScript, deterministic semantics, and a complete CI gate suite. The headline finding from this review is a **HIGH-severity prototype-chain hardening gap** in `compile.ts`: `in`-operator checks accept inherited `Object.prototype` keys (e.g. `"toString"`, `"constructor"`, `"hasOwnProperty"`) as valid state/animation/input names, causing silent misbehavior or later crashes instead of a clean `InvalidGraphError`. This was **applied** (APPLY-1). A second HIGH finding — unclamped `Infinity` in numeric guards — is **deferred** because it requires a deliberate design decision on observable behavior changes. In total **3 safe-fix sets** were applied (prototype hardening, atlas structural validation, doc/type fixes) with **no reverts**; **14 findings** are recorded as deferred follow-ups.
+aispritejs is a well-structured, zero-dependency visual animator with strict TypeScript, deterministic semantics, and a complete CI gate suite. The headline finding from this review is a **HIGH-severity prototype-chain hardening gap** in `compile.ts`: `in`-operator checks accept inherited `Object.prototype` keys (e.g. `"toString"`, `"constructor"`, `"hasOwnProperty"`) as valid state/animation/input names, causing silent misbehavior or later crashes instead of a clean `InvalidGraphError`. This was **applied** (APPLY-1). A second HIGH finding — unclamped `Infinity` in numeric guards — was previously deferred and has now been **resolved** (APPLY-4): `compileGraph` rejects non-finite `speed`, `duration`, and `defaultFrameDuration` with `InvalidGraphError`; `update()` clamps non-finite `dt` to 0. In total **4 safe-fix sets** have been applied (prototype hardening, atlas structural validation, doc/type fixes, non-finite numeric rejection + dt clamp) with **no reverts**; **13 findings** are recorded as deferred follow-ups.
 
 ---
 
@@ -55,6 +55,10 @@ aispritejs is a well-structured, zero-dependency visual animator with strict Typ
 | `llms-full.txt` | Regenerated | `pnpm build:llms` regenerated after README edits; `verify:llms` confirmed up-to-date |
 | `ROADMAP.md` | Doc (APPLY-3) | Replace stale internal name `RiveSpriteStateMachine` with `SpriteAnimator` (returned by `createSpriteAnimator`) |
 | `src/sprite/types.ts` | Doc (APPLY-3) | Add `@remarks` to `onStateChange` and `onComplete` JSDoc documenting the post-`dispose()` no-op behavior |
+| `src/sprite/compile.ts` | Hardening (APPLY-4) | Replace `!(x > 0)` guards with `!Number.isFinite(x) \|\| x <= 0` for `defaultFrameDuration`, per-frame `duration`, and state `speed`; update error messages to "must be a finite number > 0" |
+| `src/sprite/machine.ts` | Hardening (APPLY-4) | Clamp non-finite `dt` to 0 in `update()` via `Number.isFinite(deltaMs) && deltaMs > 0`; update adjacent comment |
+| `test/validation.test.ts` | Tests (APPLY-4) | Add 3 cases asserting `InvalidGraphError` for `defaultFrameDuration: Infinity`, frame `duration: Infinity`, and state `speed: Infinity` |
+| `test/machine.test.ts` | Tests (APPLY-4) | Add 1 case asserting `update(Infinity)` and `update(NaN)` do not corrupt `elapsed` on a looping clip (proves subsequent finite ticks still advance frames) |
 
 **Reverts**: none.
 
@@ -64,11 +68,11 @@ aispritejs is a well-structured, zero-dependency visual animator with strict Typ
 
 ### 5A — Update-Loop (Angle A)
 
-**[HIGH] Infinity accepted in numeric guards — `compile.ts` and `machine.ts`**
+**[HIGH] Infinity accepted in numeric guards — `compile.ts` and `machine.ts`** — RESOLVED (APPLY-4)
 - File:line: `src/sprite/compile.ts:64,70,92`; `src/sprite/machine.ts:106`
 - Evidence: `!(x > 0)` guards accept `Infinity` for `defaultFrameDuration`, per-frame `duration`, and state `speed`. `update(Infinity)` is unclamped. Effect: a looping state gets `elapsed = Infinity`, `t = NaN`, snaps permanently to frame 0; `dt = 0` with `speed = Infinity` gives `NaN` permanently; a non-looping state instantly "completes".
-- Recommendation: Reject at compile time via `Number.isFinite(x) && x > 0`; and/or clamp `dt` in `update` via `Number.isFinite(dt) ? Math.max(0, dt) : 0`. Concrete patch for compile.ts guard (example, `defaultFrameDuration`): `if (graph.defaultFrameDuration !== undefined && !(Number.isFinite(graph.defaultFrameDuration) && graph.defaultFrameDuration > 0))`.
-- Status: **deferred** — changes the set of accepted inputs and thrown-error behavior for currently-valid calls; requires a deliberate design decision.
+- Fix applied: `compileGraph` now uses `!Number.isFinite(x) || x <= 0` for all three guards, throwing `InvalidGraphError` with message "must be a finite number > 0" for non-finite inputs. `update()` clamps non-finite `dt` to 0 via `Number.isFinite(deltaMs) && deltaMs > 0`. Covering tests added in `test/validation.test.ts` (3 cases for `Infinity` inputs) and `test/machine.test.ts` (1 case for `update(Infinity)` / `update(NaN)` — proves elapsed is not poisoned and subsequent finite ticks still advance frames).
+- Status: **applied** (APPLY-4). Valid finite graphs are unaffected.
 
 **[LOW] Unbounded `elapsed` accumulation for permanently-looping states**
 - File:line: `src/sprite/machine.ts` (update loop, elapsed accumulation)
@@ -189,29 +193,6 @@ aispritejs is a well-structured, zero-dependency visual animator with strict Typ
 ## Findings-Only Backlog (DO-NOT-APPLY Items)
 
 These items are real quality issues but were excluded from safe-fix scope because they change observable behavior, thrown-error types for currently-accepted input, or require a design decision.
-
-### [HIGH] Infinity numeric corruption in update loop
-
-**Root cause**: `!(x > 0)` accepts `Infinity` at compile.ts:64 (`defaultFrameDuration`), :70 (frame `duration`), :92 (`speed`); `update(Infinity)` is unclamped in machine.ts.
-
-**Symptoms**:
-- `speed = Infinity`, `dt = 0` → `elapsed = NaN` → permanent frame 0.
-- `update(Infinity)` → `elapsed = Infinity` → looping states snap to frame 0 every frame.
-- Non-looping states with any finite duration: one `update(Infinity)` "completes" instantly.
-
-**Recommended patch (compile.ts)**:
-```ts
-// Replace !(x > 0) guards with:
-if (!Number.isFinite(graph.defaultFrameDuration) || graph.defaultFrameDuration <= 0) { ... }
-// Same for frame duration and state speed.
-```
-
-**Recommended patch (machine.ts, update)**:
-```ts
-const safeDt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
-```
-
-**Decision required**: Whether to throw `InvalidGraphError` for `Infinity` (breaking change for callers who currently pass it) or silently clamp (non-breaking). Recommend throwing, with a semver-minor bump.
 
 ### [LOW] Unbounded `elapsed` float drift
 

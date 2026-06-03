@@ -102,8 +102,8 @@ export function createSpriteAnimator(graph: SpriteGraph): SpriteAnimator {
   function update(deltaMs: number): void {
     if (disposed) throw new SpriteAnimatorDisposedError();
 
-    // Advance the playback timer (negative dt clamped to 0 for determinism).
-    elapsed += (deltaMs > 0 ? deltaMs : 0) * current.speed;
+    // Advance the playback timer (non-finite or non-positive dt clamped to 0 for determinism).
+    elapsed += (Number.isFinite(deltaMs) && deltaMs > 0 ? deltaMs : 0) * current.speed;
 
     // Evaluate input-driven transitions first; an explicit transition wins over
     // implicit end-of-clip behaviour.

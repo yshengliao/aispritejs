@@ -61,14 +61,21 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   }
 
   const defaultDuration = graph.defaultFrameDuration ?? DEFAULT_FRAME_DURATION;
-  if (!(defaultDuration > 0)) {
-    throw new InvalidGraphError(`defaultFrameDuration must be > 0, got ${defaultDuration}`);
+  if (!Number.isFinite(defaultDuration) || defaultDuration <= 0) {
+    throw new InvalidGraphError(
+      `defaultFrameDuration must be a finite number > 0, got ${defaultDuration}`,
+    );
   }
 
   if (graph.frames) {
     for (const [key, timing] of Object.entries(graph.frames)) {
-      if (timing.duration !== undefined && !(timing.duration > 0)) {
-        throw new InvalidGraphError(`frame "${key}" duration must be > 0, got ${timing.duration}`);
+      if (
+        timing.duration !== undefined &&
+        (!Number.isFinite(timing.duration) || timing.duration <= 0)
+      ) {
+        throw new InvalidGraphError(
+          `frame "${key}" duration must be a finite number > 0, got ${timing.duration}`,
+        );
       }
     }
   }
@@ -89,8 +96,10 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
       throw new InvalidGraphError(`animation "${st.animation}" (state "${name}") has no frames`);
     }
     const speed = st.speed ?? 1;
-    if (!(speed > 0)) {
-      throw new InvalidGraphError(`state "${name}" speed must be > 0, got ${speed}`);
+    if (!Number.isFinite(speed) || speed <= 0) {
+      throw new InvalidGraphError(
+        `state "${name}" speed must be a finite number > 0, got ${speed}`,
+      );
     }
     const loop = st.loop === true;
     if (loop && st.onEnd !== undefined) {

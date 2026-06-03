@@ -262,6 +262,30 @@ describe("frame timing", () => {
     a.update(-1000);
     expect(a.activeFrameIndex).toBe(0);
   });
+
+  it("clamps non-finite dt (Infinity / NaN) to zero so elapsed is not poisoned", () => {
+    // Use a looping clip; if elapsed became Infinity or NaN the frame would
+    // snap to 0 permanently and a subsequent finite update could not advance it.
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 1);
+    a.update(0); // → walk, frame 0
+    expect(a.activeState).toBe("walk");
+    expect(a.activeFrameIndex).toBe(0);
+
+    // Non-finite ticks must behave like update(0): no frame advance.
+    a.update(Number.POSITIVE_INFINITY);
+    expect(a.activeFrameIndex).toBe(0);
+    expect(a.activeFrameKey).toBe("walk_0");
+
+    a.update(Number.NaN);
+    expect(a.activeFrameIndex).toBe(0);
+    expect(a.activeFrameKey).toBe("walk_0");
+
+    // Elapsed must not have been poisoned — a normal tick should still advance.
+    a.update(100); // walk frames are 100 ms each → should reach frame 1
+    expect(a.activeFrameIndex).toBe(1);
+    expect(a.activeFrameKey).toBe("walk_1");
+  });
 });
 
 describe("onComplete and onEnd", () => {

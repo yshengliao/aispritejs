@@ -236,6 +236,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject non-finite (`Infinity`/`NaN`) `speed`, `duration`, and `defaultFrameDuration` at compile
+  time (`InvalidGraphError`); clamp non-finite `dt` to 0 in `update()` — previously these silently
+  corrupted looping playback (frame stuck at 0 / `NaN` accumulation).
+
 ## [0.1.1] - 2026-06-03
 
 First release published through the OIDC `publish.yml` pipeline (npm trusted
