@@ -85,8 +85,10 @@ function toTextureMap(src: Spritesheet | TextureMap): TextureMap {
 /**
  * Bind an input-driven {@link SpriteGraph} to a PixiJS `Sprite`.
  *
- * @param sprite - the sprite to drive; its `texture` (and, by default, `anchor`)
- *   are updated in place.
+ * @param sprite - a plain `Sprite` to drive; its `texture` (and, by default,
+ *   `anchor`) are updated in place. The adapter owns frame selection, so if a
+ *   *playing* `AnimatedSprite` is passed (it extends `Sprite`), its internal
+ *   playback is stopped to stop it fighting the adapter for the texture.
  * @param graph - the input-driven graph (same shape the core consumes).
  * @param textures - a `Spritesheet` or a frame-key → `Texture` map covering
  *   every frame the graph references.
@@ -105,6 +107,13 @@ export function createPixiSpriteAnimator(
 ): PixiSpriteAnimator {
   const map = toTextureMap(textures);
   const applyAnchor = options?.applyAnchor !== false;
+
+  // The adapter owns the sprite's texture/anchor. An AnimatedSprite (which
+  // extends Sprite, so the type permits it) drives its own texture from an
+  // internal ticker; if it is playing it would fight our frame swaps. Stop it.
+  // Structural check — pixi.js is type-only here, so no `instanceof`.
+  const playable = sprite as { stop?: () => void };
+  if (typeof playable.stop === "function") playable.stop();
 
   // Fail-fast: every frame key reachable from the graph must have a texture.
   const missing = new Set<string>();

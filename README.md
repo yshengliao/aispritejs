@@ -70,6 +70,8 @@ view.fireTrigger("jump");
 
 It swaps the texture only when the active frame changes, and honours per-frame `duration` (via the core) and non-centre / foot pivots (via `texture.defaultAnchor`; pass `{ applyAnchor: false }` to manage the anchor yourself). `view.sprite` is the bound sprite; `dispose()` tears down the core without destroying the sprite.
 
+Pass a plain `Sprite` — the adapter owns frame selection. (An `AnimatedSprite` is accepted since it extends `Sprite`, but its own playback is stopped on bind so it cannot fight the adapter for the texture.)
+
 ## Data format (atlas)
 
 `aispritejs` reads a **PixiJS v8-native** spritesheet atlas (`meta` / `frames` / `animations`) — the same shape the family's sprite pipeline emits — augmented with an `aispritejs` **input-driven** control block:

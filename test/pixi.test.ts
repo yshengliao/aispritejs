@@ -171,6 +171,20 @@ describe("createPixiSpriteAnimator", () => {
     expect(s.texture).toBe(map.walk_0);
   });
 
+  it("stops a playing AnimatedSprite so its ticker cannot fight the texture swap", () => {
+    const s = makeSprite();
+    let stopped = 0;
+    // AnimatedSprite-like: a Sprite probe plus a stop() method (extends Sprite).
+    const animated = Object.assign(s, {
+      stop: () => {
+        stopped++;
+      },
+    });
+    const view = createPixiSpriteAnimator(animated.asSprite(), graph(), textureMap());
+    expect(stopped).toBe(1);
+    expect(view.activeFrameKey).toBe("idle_0"); // adapter still drives frames
+  });
+
   it("throws MissingTextureError when a referenced frame has no texture", () => {
     const s = makeSprite();
     const incomplete: Record<string, Texture> = { idle_0: fakeTexture(), idle_1: fakeTexture() };

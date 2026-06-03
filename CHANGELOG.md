@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`peerDependenciesMeta.optional`). The adapter imports it **type-only**, so
   the built subpath contains no runtime `pixi.js` require; the core never
   imports the adapter. Per-subpath gzip budget added for `dist/pixi/index.js`.
+- Guard: if a *playing* `AnimatedSprite` is passed (it extends `Sprite`), its
+  internal playback is stopped on bind so its ticker cannot fight the adapter's
+  texture swaps. The adapter expects a plain `Sprite`.
 
 ## [0.1.0] - 2026-06-03
 
