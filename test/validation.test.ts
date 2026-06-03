@@ -166,6 +166,32 @@ describe("graph validation", () => {
     });
   });
 
+  it("rejects an array transition entry (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [[] as unknown as { from: string; to: string }],
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        transitions: [[] as unknown as { from: string; to: string }],
+      }),
+    ).toThrow(new InvalidGraphError("transition #0 must be an object"));
+  });
+
+  it("rejects a non-object frame timing entry (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      frames: { i0: null as unknown as { duration?: number } },
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        frames: { i0: null as unknown as { duration?: number } },
+      }),
+    ).toThrow(new InvalidGraphError(`frame "i0" timing must be an object`));
+  });
+
   it("rejects a null transition entry (direct compileGraph hardening)", () => {
     expectInvalid({
       ...base(),

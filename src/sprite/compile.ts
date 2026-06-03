@@ -69,6 +69,9 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
 
   if (graph.frames) {
     for (const [key, timing] of Object.entries(graph.frames)) {
+      if (timing === null || typeof timing !== "object" || Array.isArray(timing)) {
+        throw new InvalidGraphError(`frame "${key}" timing must be an object`);
+      }
       if (
         timing.duration !== undefined &&
         (!Number.isFinite(timing.duration) || timing.duration <= 0)
@@ -133,7 +136,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   // --- compile transitions ------------------------------------------------
   const compiled: CompiledTransition[] = [];
   graph.transitions.forEach((t, order) => {
-    if ((t as unknown) === null || typeof (t as unknown) !== "object") {
+    if ((t as unknown) === null || typeof (t as unknown) !== "object" || Array.isArray(t)) {
       throw new InvalidGraphError(`transition #${order} must be an object`);
     }
     if (t.when !== undefined && !Array.isArray(t.when)) {

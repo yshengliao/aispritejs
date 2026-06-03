@@ -9,12 +9,12 @@ import type { SpriteGraph } from "../../src/index.js";
  * `jump` loops so it never auto-completes — keeps transition tests isolated
  * from end-of-clip behaviour.
  *
- * `isGrounded` is load-bearing: the `jump → idle` landing transition fires
- * when `isGrounded` becomes `false` (mid-air) is no longer the case — i.e.
- * `isGrounded === false` means in-air, transition to idle on landing
- * (`isGrounded === false` triggers the exit). This keeps all existing tests
- * unchanged because they rely on the default `isGrounded = true` (default
- * never satisfies the `isGrounded === false` condition).
+ * `isGrounded` is load-bearing: the `jump → idle` transition fires while NOT
+ * grounded (`isGrounded === false`). This is a contrived gate that exists
+ * purely to keep the `isGrounded` input load-bearing for the PBT `grounded`
+ * command — it does not model real landing physics. Existing tests are
+ * unaffected because they rely on the default `isGrounded = true`, which
+ * never satisfies the `isGrounded === false` condition.
  */
 export function platformer(): SpriteGraph {
   return {
@@ -45,7 +45,8 @@ export function platformer(): SpriteGraph {
     },
     transitions: [
       { from: "*", to: "jump", when: [{ input: "jump", op: "Trigger" }], priority: 10 },
-      // Land/fall transition: exit jump when isGrounded becomes false (in-air → landed).
+      // Contrived gate: fires while NOT grounded (isGrounded === false).
+      // Keeps isGrounded load-bearing for PBT; not real landing physics.
       // Default isGrounded=true means this condition never fires in existing tests.
       { from: "jump", to: "idle", when: [{ input: "isGrounded", op: "Equals", value: false }] },
       { from: "idle", to: "walk", when: [{ input: "speed", op: "GreaterThan", value: 0 }] },
