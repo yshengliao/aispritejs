@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-03
+
+First release published through the OIDC `publish.yml` pipeline (npm trusted
+publisher), so the npm tarball carries **SLSA build provenance** — `0.1.0` was
+published locally without it. No source/API changes.
+
+### Changed
+
+- Docs: corrected the **AI Generated** badge to the actual authoring model,
+  `Claude Code Opus 4.8`, in `README.md` and `README_ZHTW.md` (matching the
+  family's model-attribution convention).
+
 ## [0.1.0] - 2026-06-03
 
 Initial release — the input-driven core plus the PixiJS v8 adapter, atlas
@@ -108,5 +120,6 @@ parser, and JSON Schema (roadmap modules 1–4).
   / lines (above the family floor of 95 / 90 / 100 / 100). Core gzip ≈ 3.5 KB.
 - OIDC + SLSA provenance publish on tag-push.
 
-[Unreleased]: https://github.com/yshengliao/aispritejs/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/yshengliao/aispritejs/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/yshengliao/aispritejs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yshengliao/aispritejs/releases/tag/v0.1.0

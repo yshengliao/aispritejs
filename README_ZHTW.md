@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/aispritejs.svg)](https://www.npmjs.com/package/aispritejs)
 [![CI](https://github.com/yshengliao/aispritejs/actions/workflows/ci.yml/badge.svg)](https://github.com/yshengliao/aispritejs/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
-[![AI Generated](https://img.shields.io/badge/AI_Generated-yes-blueviolet.svg)](https://www.anthropic.com/claude-code)
+[![AI Generated](https://img.shields.io/badge/AI_Generated-Claude_Code_Opus_4.8-blueviolet.svg)](https://www.anthropic.com/claude-code)
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 
 > 以輸入驅動、與渲染器無關的 2D sprite 動畫 runtime —— 一個輕巧、類 Rive 的*視覺*狀態機，由 `Number` / `Boolean` / `Trigger` 輸入驅動。

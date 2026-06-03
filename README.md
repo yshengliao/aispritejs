@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/aispritejs.svg)](https://www.npmjs.com/package/aispritejs)
 [![CI](https://github.com/yshengliao/aispritejs/actions/workflows/ci.yml/badge.svg)](https://github.com/yshengliao/aispritejs/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
-[![AI Generated](https://img.shields.io/badge/AI_Generated-yes-blueviolet.svg)](https://www.anthropic.com/claude-code)
+[![AI Generated](https://img.shields.io/badge/AI_Generated-Claude_Code_Opus_4.8-blueviolet.svg)](https://www.anthropic.com/claude-code)
 [![繁體中文](https://img.shields.io/badge/lang-繁體中文-red.svg)](README_ZHTW.md)
 
 > Input-driven, renderer-agnostic 2D sprite animation runtime — a tiny, Rive-like *visual* state machine driven by `Number` / `Boolean` / `Trigger` inputs.
