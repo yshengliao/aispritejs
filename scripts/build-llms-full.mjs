@@ -37,7 +37,14 @@ The short index lives at \`llms.txt\` (see https://llmstxt.org/).
 let out = header;
 
 for (const { path, title } of sections) {
-  const content = await readFile(resolve(root, path), "utf8");
+  let content = await readFile(resolve(root, path), "utf8");
+  const dir = dirname(path);
+  if (dir !== ".") {
+    // Rewrite links relative to the section's own directory so they still
+    // resolve from the repo root in this concatenated file (e.g.
+    // examples/README.md's `](01-.../index.ts)` → `](examples/01-.../index.ts)`).
+    content = content.replace(/\]\((?!https?:\/\/|\/|#)([^)\s]+)\)/g, `](${dir}/$1)`);
+  }
   if (title) out += `\n# ${title} (\`${path}\`)\n\n`;
   else out += `\n<!-- ===== ${path} ===== -->\n\n`;
   out += content;

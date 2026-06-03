@@ -20,6 +20,12 @@
 
 ## Phases
 
+> **Shipped status:** roadmap modules 1–4 all landed together in the **0.1.0**
+> first release — the input-driven core (`.`), the PixiJS v8 adapter (`/pixi`),
+> the atlas parser (`/atlas`), and the JSON Schema (`/schema`). The `v0.2.0` /
+> `v0.3.0` / `v0.4.0` sub-sections below record the **build phasing**, not
+> separate published releases; they converged before the first publish.
+
 ### v0.1.0 — renderer-agnostic core
 - **Inputs**: `Number` / `Boolean` / `Trigger` (trigger auto-resets when a transition consumes it).
 - **`State`**: animation key + loop / on-end behaviour + optional speed multiplier.

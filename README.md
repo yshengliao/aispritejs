@@ -200,11 +200,7 @@ pnpm example:platformer
 
 ## Status
 
-- **v0.1.0 — renderer-agnostic core** (released): inputs, the transition graph, and the `createSpriteAnimator` engine. Zero runtime dependencies; the root import graph contains no `pixi.js`.
-- **Unreleased — `aispritejs/pixi` adapter** (module 4): `createPixiSpriteAnimator` binding the core to a PixiJS v8 `Sprite`, honouring per-frame `duration` + atlas `anchor`. `pixi.js` is an optional, type-only peer.
-- **Unreleased — `aispritejs/atlas` parser + JSON Schema** (module 3): `parseAtlas` / `loadAtlas` consume a PixiJS-v8 atlas (incl. the real family pipeline output), ignore any foreign event-driven `states`, and validate fail-fast. Pure, zero-dependency.
-
-All roadmap modules (1–4) are now implemented on the default branch. Versioning and release tags are cut by the maintainer.
+**v0.1.0 — full first release.** All roadmap modules (1–4) ship together: the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`). Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath. Versioning and release tags are cut by the maintainer.
 
 ## Roadmap
 

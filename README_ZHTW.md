@@ -198,11 +198,7 @@ pnpm example:platformer
 
 ## 狀態
 
-- **v0.1.0 —— 與渲染器無關的核心**（已發佈）：輸入、轉移圖與 `createSpriteAnimator` 引擎。零執行期相依；根 import 圖不含 `pixi.js`。
-- **未發佈 —— `aispritejs/pixi` 轉接器**（模組 4）：`createPixiSpriteAnimator` 把核心綁到 PixiJS v8 `Sprite`，尊重逐影格 `duration` 與 atlas `anchor`。`pixi.js` 是選用、type-only 的 peer。
-- **未發佈 —— `aispritejs/atlas` parser + JSON Schema**（模組 3）：`parseAtlas` / `loadAtlas` 消化 PixiJS v8 atlas（含真實家族 pipeline 產出），忽略 foreign 事件驅動 `states`，並 fail-fast 驗證。純函式、零相依。
-
-roadmap 模組 1–4 皆已於預設分支實作。版本號與發佈 tag 由維護者切。
+**v0.1.0 —— 完整首發。** roadmap 模組 1–4 一併 ship：與渲染器無關的核心（`.`）、PixiJS v8 轉接器（`aispritejs/pixi`）、atlas parser（`aispritejs/atlas`）、JSON Schema（`aispritejs/schema`）。零執行期相依；根 import 圖不含 `pixi.js`；`pixi.js` 是選用、type-only 的 peer,僅 `/pixi` 子路徑用。版本號與發佈 tag 由維護者切。
 
 ## Roadmap
 

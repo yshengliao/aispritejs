@@ -128,7 +128,9 @@ export interface TransitionDef {
   readonly when?: readonly TransitionCondition[];
   /**
    * Higher wins. Among satisfied transitions, the highest priority is taken;
-   * ties break by declared order (earliest first). Defaults to `0`.
+   * ties break by declared order (earliest first). An integer; defaults to `0`.
+   * (The JSON Schema constrains it to `integer`; TypeScript widens it to
+   * `number`.)
    */
   readonly priority?: number;
 }

@@ -109,14 +109,63 @@ describe("triggers", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("a pending trigger persists across frames until a transition consumes it", () => {
-    const a = createSpriteAnimator(platformer());
-    // No transition uses jump from a state that is reachable right now? jump is
-    // Any-State, so it fires on the very next update — but prove persistence by
-    // firing then updating twice with the first update blocked by nothing.
-    a.fireTrigger("jump");
+  it("keeps a pending trigger across frames until a state that consumes it is reached", () => {
+    // `special` is only consumed by b→c. Fire it while in `a` (no consumer),
+    // advance several frames + take the unrelated a→b transition, and prove it
+    // survived to fire b→c — real cross-frame persistence, not fire-then-update.
+    const a = createSpriteAnimator({
+      animations: { a: ["a0"], b: ["b0"], c: ["c0"] },
+      inputs: { go: { type: "boolean", default: false }, special: { type: "trigger" } },
+      states: {
+        a: { animation: "a", loop: true },
+        b: { animation: "b", loop: true },
+        c: { animation: "c", loop: true },
+      },
+      transitions: [
+        { from: "a", to: "b", when: [{ input: "go", op: "Equals", value: true }] },
+        { from: "b", to: "c", when: [{ input: "special", op: "Trigger" }] },
+      ],
+      initial: "a",
+    });
+    a.fireTrigger("special");
+    a.update(16);
+    expect(a.activeState).toBe("a"); // no consumer in `a` → special survives
+    a.update(16);
+    expect(a.activeState).toBe("a"); // still pending across another frame
+    a.setInput("go", true);
     a.update(0);
-    expect(a.activeState).toBe("jump");
+    expect(a.activeState).toBe("b"); // a→b (boolean) does NOT consume special
+    a.update(0);
+    expect(a.activeState).toBe("c"); // b consumes the still-pending special
+    a.update(0);
+    expect(a.activeState).toBe("c"); // consumed once; no spurious re-fire
+  });
+});
+
+describe("multi-condition transitions (AND)", () => {
+  it("requires every when-condition to hold before transitioning", () => {
+    const a = createSpriteAnimator({
+      animations: { s0: ["x0"], s1: ["y0"] },
+      inputs: { n: { type: "number", default: 0 }, b: { type: "boolean", default: false } },
+      states: { s0: { animation: "s0", loop: true }, s1: { animation: "s1", loop: true } },
+      transitions: [
+        {
+          from: "s0",
+          to: "s1",
+          when: [
+            { input: "n", op: "GreaterThan", value: 0 },
+            { input: "b", op: "Equals", value: true },
+          ],
+        },
+      ],
+      initial: "s0",
+    });
+    a.setInput("n", 5); // only the first condition holds
+    a.update(0);
+    expect(a.activeState).toBe("s0"); // b still false → no transition
+    a.setInput("b", true); // now both hold
+    a.update(0);
+    expect(a.activeState).toBe("s1");
   });
 });
 

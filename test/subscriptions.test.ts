@@ -97,3 +97,36 @@ describe("onComplete", () => {
     unsub(); // no throw after a once-handler already cleaned up
   });
 });
+
+describe("emitter edge cases", () => {
+  it("does not invoke listeners registered before dispose, and blocks further driving", () => {
+    const a = createSpriteAnimator(platformer());
+    const spy = vi.fn();
+    a.onStateChange(spy);
+    a.dispose();
+    expect(spy).not.toHaveBeenCalled(); // dispose clears listeners; nothing fires
+    expect(() => a.update(0)).toThrow(); // a disposed machine cannot be driven
+  });
+
+  it("a handler that unsubscribes itself mid-emit does not disturb the others", () => {
+    const a = createSpriteAnimator(platformer());
+    const calls: string[] = [];
+    let unsubA: () => void = () => {};
+    const A = vi.fn(() => {
+      calls.push("A");
+      unsubA(); // remove self during this emit
+    });
+    const B = vi.fn(() => {
+      calls.push("B");
+    });
+    unsubA = a.onStateChange(A);
+    a.onStateChange(B);
+
+    toWalk(a); // first emit: the snapshot lets both fire once, in order
+    expect(calls).toEqual(["A", "B"]);
+
+    toIdle(a); // second emit: A removed itself → only B fires
+    expect(A).toHaveBeenCalledTimes(1);
+    expect(B).toHaveBeenCalledTimes(2);
+  });
+});

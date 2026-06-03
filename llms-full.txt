@@ -213,11 +213,7 @@ pnpm example:platformer
 
 ## Status
 
-- **v0.1.0 — renderer-agnostic core** (released): inputs, the transition graph, and the `createSpriteAnimator` engine. Zero runtime dependencies; the root import graph contains no `pixi.js`.
-- **Unreleased — `aispritejs/pixi` adapter** (module 4): `createPixiSpriteAnimator` binding the core to a PixiJS v8 `Sprite`, honouring per-frame `duration` + atlas `anchor`. `pixi.js` is an optional, type-only peer.
-- **Unreleased — `aispritejs/atlas` parser + JSON Schema** (module 3): `parseAtlas` / `loadAtlas` consume a PixiJS-v8 atlas (incl. the real family pipeline output), ignore any foreign event-driven `states`, and validate fail-fast. Pure, zero-dependency.
-
-All roadmap modules (1–4) are now implemented on the default branch. Versioning and release tags are cut by the maintainer.
+**v0.1.0 — full first release.** All roadmap modules (1–4) ship together: the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`). Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath. Versioning and release tags are cut by the maintainer.
 
 ## Roadmap
 
@@ -240,46 +236,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added — `aispritejs/atlas` parser + JSON Schema (for v0.3.0)
-
-- **`parseAtlas(atlas, control?)`** and **`loadAtlas(atlas, control?)`** on the
-  new `aispritejs/atlas` subpath — turn a parsed PixiJS-v8 atlas into a
-  `SpriteGraph` (or a ready `SpriteAnimator`). The atlas supplies the universal
-  `animations` / `frames`; the input-driven control comes from the atlas itself
-  (augmented shape) or from the `control` argument.
-- **Ignores a foreign event-driven `states` block** — the FSM `{ initial,
-  definitions }` shape emitted by other tools is detected and skipped; pass an
-  `aispritejs` control block instead. Verified against the real family pipeline
-  atlas (`test/fixtures/reimu-atlas.json`).
-- **`InvalidAtlasError`** for structural problems (fail-fast); semantic problems
-  surface as `InvalidGraphError` from the core.
-- **JSON Schema** shipped at `schemas/aispritejs-graph.schema.json` (draft
-  2020-12), exported as `aispritejs/schema`, describing the input-driven graph.
-  The parser mirrors it in code, so there is no runtime schema-validator
-  dependency. Pure, zero-dependency subpath; per-subpath gzip budget added.
-
-### Added — `aispritejs/pixi` adapter (for v0.2.0)
-
-- **`createPixiSpriteAnimator(sprite, graph, textures, options?)`** on the new
-  `aispritejs/pixi` subpath — binds the renderer-agnostic core to a PixiJS v8
-  `Sprite`. On each `update(dt)` it runs the core machine and, when the active
-  frame changes, swaps the sprite's texture and applies that frame's atlas
-  anchor (`texture.defaultAnchor`) — preserving non-centre / foot pivots
-  (`{ applyAnchor: false }` opts out). Accepts a `Spritesheet` or a frame-key →
-  `Texture` map.
-- **`MissingTextureError`** — fail-fast at construction when a frame key the
-  graph references has no texture (carries `.keys`).
-- `pixi.js` declared as an **optional** `peerDependency`
-  (`peerDependenciesMeta.optional`). The adapter imports it **type-only**, so
-  the built subpath contains no runtime `pixi.js` require; the core never
-  imports the adapter. Per-subpath gzip budget added for `dist/pixi/index.js`.
-- Guard: if a *playing* `AnimatedSprite` is passed (it extends `Sprite`), its
-  internal playback is stopped on bind so its ticker cannot fight the adapter's
-  texture swaps. The adapter expects a plain `Sprite`.
-
 ## [0.1.0] - 2026-06-03
 
-Initial release — the renderer-agnostic core (modules 1–2 of the roadmap).
+Initial release — the input-driven core plus the PixiJS v8 adapter, atlas
+parser, and JSON Schema (roadmap modules 1–4).
 
 ### Added
 
@@ -327,11 +287,49 @@ Initial release — the renderer-agnostic core (modules 1–2 of the roadmap).
   `CONTRIBUTING.md`, `ROADMAP.md`, `llms.txt` / `llms-full.txt`, and a runnable
   Node example (`examples/01-platformer-inputs`).
 
+### Added — `aispritejs/pixi` adapter
+
+- **`createPixiSpriteAnimator(sprite, graph, textures, options?)`** on the
+  `aispritejs/pixi` subpath — binds the renderer-agnostic core to a PixiJS v8
+  `Sprite`. On each `update(dt)` it runs the core machine and, when the active
+  frame changes, swaps the sprite's texture and applies that frame's atlas
+  anchor (`texture.defaultAnchor`) — preserving non-centre / foot pivots
+  (`{ applyAnchor: false }` opts out). Accepts a `Spritesheet` or a frame-key →
+  `Texture` map.
+- **`MissingTextureError`** — fail-fast at construction when a frame key the
+  graph references has no texture (carries `.keys`).
+- `pixi.js` declared as an **optional** `peerDependency`
+  (`peerDependenciesMeta.optional`). The adapter imports it **type-only**, so
+  the built subpath contains no runtime `pixi.js` require; the core never
+  imports the adapter.
+- Guard: if a *playing* `AnimatedSprite` is passed (it extends `Sprite`), its
+  internal playback is stopped on bind so its ticker cannot fight the adapter's
+  texture swaps. The adapter expects a plain `Sprite`.
+
+### Added — `aispritejs/atlas` parser + JSON Schema
+
+- **`parseAtlas(atlas, control?)`** and **`loadAtlas(atlas, control?)`** on the
+  `aispritejs/atlas` subpath — turn a parsed PixiJS-v8 atlas into a
+  `SpriteGraph` (or a ready `SpriteAnimator`). The atlas supplies the universal
+  `animations` / `frames`; the input-driven control comes from the atlas itself
+  (augmented shape) or from the `control` argument.
+- **Ignores a foreign event-driven `states` block** — the FSM `{ initial,
+  definitions }` shape emitted by other tools is detected and skipped; pass an
+  `aispritejs` control block instead. Verified against the real family pipeline
+  atlas (`test/fixtures/reimu-atlas.json`).
+- **`InvalidAtlasError`** for structural problems (fail-fast); semantic problems
+  surface as `InvalidGraphError` from the core.
+- **JSON Schema** shipped at `schemas/aispritejs-graph.schema.json` (draft
+  2020-12), exported as `aispritejs/schema`, describing the input-driven graph.
+  The parser mirrors it in code, so there is no runtime schema-validator
+  dependency.
+
 ### Guarantees (CI)
 
 - Strict TypeScript (`strict` + `noUncheckedIndexedAccess` +
   `exactOptionalPropertyTypes`), no `any`.
-- Dual ESM + CJS build via `tsup`; `sideEffects: false`; `.` subpath export.
+- Dual ESM + CJS build via `tsup`; `sideEffects: false`; `.` + `/pixi` +
+  `/atlas` + `/schema` subpath exports; per-subpath gzip budgets.
 - **Zero runtime dependencies**; the root import graph contains no `pixi.js`,
   DOM, or canvas API.
 - `prepublishOnly` gate: typecheck → lint → coverage → build → verify:exports →
@@ -432,7 +430,7 @@ frame key as inputs drive the visual state machine.
 pnpm example:platformer
 ```
 
-[`01-platformer-inputs/index.ts`](01-platformer-inputs/index.ts) wires a
+[`01-platformer-inputs/index.ts`](examples/01-platformer-inputs/index.ts) wires a
 classic `idle` / `walk` / `jump` graph and exercises every core idea:
 
 - a **Number** input (`speed`) drives `idle ⇄ walk`;

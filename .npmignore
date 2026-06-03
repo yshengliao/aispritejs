@@ -2,7 +2,6 @@ src
 test
 scripts
 examples
-schemas
 .github
 *.config.ts
 tsconfig.json
