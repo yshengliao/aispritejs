@@ -124,6 +124,12 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   // --- compile transitions ------------------------------------------------
   const compiled: CompiledTransition[] = [];
   graph.transitions.forEach((t, order) => {
+    if ((t as unknown) === null || typeof (t as unknown) !== "object") {
+      throw new InvalidGraphError(`transition #${order} must be an object`);
+    }
+    if (t.when !== undefined && !Array.isArray(t.when)) {
+      throw new InvalidGraphError(`transition #${order} "when" must be an array`);
+    }
     if (t.from !== "*" && !Object.hasOwn(graph.states, t.from)) {
       throw new InvalidGraphError(`transition #${order} from "${t.from}" is not a declared state`);
     }

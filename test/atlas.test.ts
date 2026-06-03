@@ -194,6 +194,46 @@ describe("parseAtlas — structural validation", () => {
       }),
     ).toThrow(InvalidAtlasError);
   });
+
+  it("rejects an inputs entry that is not an object", () => {
+    // inputs:{speed:null} must throw InvalidAtlasError with accurate type name.
+    expect(() =>
+      parseAtlas({
+        animations: { idle: ["i0"] },
+        inputs: { speed: null },
+        states: { idle: { animation: "idle" } },
+        transitions: [],
+      }),
+    ).toThrow(new InvalidAtlasError('input entry "speed" must be an object, got null'));
+    expect(() =>
+      parseAtlas({
+        animations: { idle: ["i0"] },
+        inputs: { speed: [1, 2] },
+        states: { idle: { animation: "idle" } },
+        transitions: [],
+      }),
+    ).toThrow(new InvalidAtlasError('input entry "speed" must be an object, got array'));
+  });
+
+  it("rejects a states entry that is not an object", () => {
+    // states:{idle:null} must throw InvalidAtlasError with accurate type name.
+    expect(() =>
+      parseAtlas({
+        animations: { idle: ["i0"] },
+        inputs: {},
+        states: { idle: null },
+        transitions: [],
+      }),
+    ).toThrow(new InvalidAtlasError('state entry "idle" must be an object, got null'));
+    expect(() =>
+      parseAtlas({
+        animations: { idle: ["i0"] },
+        inputs: {},
+        states: { idle: "bad" },
+        transitions: [],
+      }),
+    ).toThrow(new InvalidAtlasError('state entry "idle" must be an object, got string'));
+  });
 });
 
 describe("loadAtlas — semantic validation", () => {

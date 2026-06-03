@@ -139,6 +139,32 @@ describe("graph validation", () => {
     });
   });
 
+  it("rejects a null transition entry (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [null as unknown as { from: string; to: string }],
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        transitions: [null as unknown as { from: string; to: string }],
+      }),
+    ).toThrow(new InvalidGraphError("transition #0 must be an object"));
+  });
+
+  it("rejects a non-array `when` on a transition (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [{ from: "idle", to: "idle", when: {} as unknown as never[] }],
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        transitions: [{ from: "idle", to: "idle", when: {} as unknown as never[] }],
+      }),
+    ).toThrow(new InvalidGraphError(`transition #0 "when" must be an array`));
+  });
+
   it("accepts a valid graph with all operator kinds", () => {
     expect(() =>
       createSpriteAnimator({

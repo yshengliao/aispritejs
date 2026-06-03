@@ -106,7 +106,8 @@ export function parseAtlas(atlas: unknown, control?: SpriteControl): SpriteGraph
   if (isObject(frames)) {
     for (const [key, entry] of Object.entries(frames)) {
       if (!isObject(entry)) {
-        throw new InvalidAtlasError(`frame entry "${key}" must be an object, got ${typeof entry}`);
+        const actualType = entry === null ? "null" : Array.isArray(entry) ? "array" : typeof entry;
+        throw new InvalidAtlasError(`frame entry "${key}" must be an object, got ${actualType}`);
       }
     }
   }
@@ -125,12 +126,24 @@ export function parseAtlas(atlas: unknown, control?: SpriteControl): SpriteGraph
         "atlas has no aispritejs control block (inputs/states/transitions); pass one as the second argument",
       );
     }
+    for (const [key, val] of Object.entries(atlas.inputs)) {
+      if (!isObject(val)) {
+        const actualType = val === null ? "null" : Array.isArray(val) ? "array" : typeof val;
+        throw new InvalidAtlasError(`input entry "${key}" must be an object, got ${actualType}`);
+      }
+    }
+    for (const [key, val] of Object.entries(atlas.states)) {
+      if (!isObject(val)) {
+        const actualType = val === null ? "null" : Array.isArray(val) ? "array" : typeof val;
+        throw new InvalidAtlasError(`state entry "${key}" must be an object, got ${actualType}`);
+      }
+    }
     const rawTransitions = atlas.transitions as unknown[];
     for (let i = 0; i < rawTransitions.length; i++) {
-      if (!isObject(rawTransitions[i])) {
-        throw new InvalidAtlasError(
-          `transitions[${i}] must be an object, got ${typeof rawTransitions[i]}`,
-        );
+      const entry = rawTransitions[i];
+      if (!isObject(entry)) {
+        const actualType = entry === null ? "null" : Array.isArray(entry) ? "array" : typeof entry;
+        throw new InvalidAtlasError(`transitions[${i}] must be an object, got ${actualType}`);
       }
     }
     resolved = {
