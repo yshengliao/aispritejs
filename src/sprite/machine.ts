@@ -103,6 +103,9 @@ export function createSpriteAnimator(graph: SpriteGraph): SpriteAnimator {
     if (disposed) throw new SpriteAnimatorDisposedError();
 
     // Advance the playback timer (non-finite or non-positive dt clamped to 0 for determinism).
+    // NOTE: `elapsed` accumulates without bound in looping states (intentional design choice).
+    // Drift from floating-point accumulation is sub-ULP-relevant only after continuous play
+    // on the order of years; a periodic reset (e.g. on state entry) would be premature.
     elapsed += (Number.isFinite(deltaMs) && deltaMs > 0 ? deltaMs : 0) * current.speed;
 
     // Evaluate input-driven transitions first; an explicit transition wins over

@@ -247,3 +247,60 @@ describe("loadAtlas — semantic validation", () => {
     expect(() => loadAtlas({ animations: { idle: ["i0"] } }, control)).toThrow(InvalidGraphError);
   });
 });
+
+// B10: atlas wrong-type control fields (PIN current behavior, do NOT change it).
+// When `initial` or `defaultFrameDuration` have the wrong type in the atlas JSON,
+// the parser leniently ignores the wrong-typed field (it uses a typeof-guard).
+// This leniency is intentional and locked: the parser only picks up these fields
+// when they are the expected type, silently skipping bad values rather than throwing.
+// Any change to this behavior would be a BREAKING CHANGE for lenient atlases in the wild.
+describe("parseAtlas — wrong-type control fields (lenient behavior, LOCKED)", () => {
+  it("ignores a non-string `initial` and starts at the first declared state", () => {
+    // `initial: 42` is a number, not a string → ignored by the typeof guard.
+    // The graph defaults to the first declared state ("idle").
+    const graph = parseAtlas({
+      animations: { idle: ["i0"], walk: ["w0"] },
+      inputs: {},
+      states: { idle: { animation: "idle" }, walk: { animation: "walk" } },
+      transitions: [],
+      initial: 42, // wrong type: number instead of string
+    });
+    // Wrong-typed `initial` is ignored → defaults to first declared state.
+    expect(graph.initial).toBeUndefined(); // parseAtlas does not forward it
+    // Confirm the animator starts at the first declared state.
+    const a = loadAtlas({
+      animations: { idle: ["i0"], walk: ["w0"] },
+      inputs: {},
+      states: { idle: { animation: "idle" }, walk: { animation: "walk" } },
+      transitions: [],
+      initial: 42,
+    });
+    expect(a.activeState).toBe("idle"); // first declared state
+  });
+
+  it("ignores a non-number `defaultFrameDuration` and uses the runtime default (100ms)", () => {
+    // `defaultFrameDuration: "fast"` is a string, not a number → ignored.
+    // The runtime fallback is 100ms.
+    const graph = parseAtlas({
+      animations: { idle: ["i0"] },
+      inputs: {},
+      states: { idle: { animation: "idle", loop: true } },
+      transitions: [],
+      defaultFrameDuration: "fast", // wrong type: string instead of number
+    });
+    // Wrong-typed field is not forwarded.
+    expect(graph.defaultFrameDuration).toBeUndefined();
+    // Confirm the animator uses the 100ms runtime default.
+    const a = loadAtlas({
+      animations: { idle: ["i0"] },
+      inputs: {},
+      states: { idle: { animation: "idle", loop: true } },
+      transitions: [],
+      defaultFrameDuration: "fast",
+    });
+    // idle_0 at 100ms default: after 100ms elapsed the frame wraps back to 0 in a loop.
+    expect(a.activeState).toBe("idle");
+    a.update(100);
+    expect(a.activeFrameIndex).toBe(0); // single frame loops to 0
+  });
+});

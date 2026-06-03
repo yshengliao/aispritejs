@@ -205,6 +205,34 @@ describe("graph validation", () => {
     ).not.toThrow();
   });
 
+  // B8: NotEquals validation variants (compile errors).
+  it("rejects NotEquals on a trigger input", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "t", op: "NotEquals", value: 1 }] },
+      ],
+    });
+  });
+
+  it("rejects NotEquals on a number input with a non-numeric value", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "n", op: "NotEquals", value: true }] },
+      ],
+    });
+  });
+
+  it("rejects NotEquals on a boolean input with a non-boolean value", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "b", op: "NotEquals", value: 1 }] },
+      ],
+    });
+  });
+
   // Prototype-key hardening: Object.prototype names must never be accepted as
   // valid state, animation, or input references — they are not own properties.
   it("rejects a prototype-key initial state (Object.hasOwn hardening)", () => {

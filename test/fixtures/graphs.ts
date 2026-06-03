@@ -8,6 +8,13 @@ import type { SpriteGraph } from "../../src/index.js";
  * Trigger (`jump`). Exercises priority, Any-State, and trigger consumption.
  * `jump` loops so it never auto-completes — keeps transition tests isolated
  * from end-of-clip behaviour.
+ *
+ * `isGrounded` is load-bearing: the `jump → idle` landing transition fires
+ * when `isGrounded` becomes `false` (mid-air) is no longer the case — i.e.
+ * `isGrounded === false` means in-air, transition to idle on landing
+ * (`isGrounded === false` triggers the exit). This keeps all existing tests
+ * unchanged because they rely on the default `isGrounded = true` (default
+ * never satisfies the `isGrounded === false` condition).
  */
 export function platformer(): SpriteGraph {
   return {
@@ -38,6 +45,9 @@ export function platformer(): SpriteGraph {
     },
     transitions: [
       { from: "*", to: "jump", when: [{ input: "jump", op: "Trigger" }], priority: 10 },
+      // Land/fall transition: exit jump when isGrounded becomes false (in-air → landed).
+      // Default isGrounded=true means this condition never fires in existing tests.
+      { from: "jump", to: "idle", when: [{ input: "isGrounded", op: "Equals", value: false }] },
       { from: "idle", to: "walk", when: [{ input: "speed", op: "GreaterThan", value: 0 }] },
       { from: "walk", to: "idle", when: [{ input: "speed", op: "Equals", value: 0 }] },
     ],

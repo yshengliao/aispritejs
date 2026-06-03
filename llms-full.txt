@@ -236,6 +236,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- JSON Schema: `animations` now requires at least one entry (`minProperties: 1`), matching `states`
+  and the runtime (which already rejects an empty animations map via `InvalidGraphError`).
+
 ### Fixed
 
 - Reject non-finite (`Infinity`/`NaN`) `speed`, `duration`, and `defaultFrameDuration` at compile
