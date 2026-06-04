@@ -44,6 +44,11 @@ export interface CompiledGraph {
 
 const DEFAULT_FRAME_DURATION = 100;
 
+/** @internal */
+export function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 export function compileGraph(graph: SpriteGraph): CompiledGraph {
   const stateEntries = Object.entries(graph.states);
   if (stateEntries.length === 0) {
@@ -69,7 +74,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
 
   if (graph.frames) {
     for (const [key, timing] of Object.entries(graph.frames)) {
-      if (timing === null || typeof timing !== "object" || Array.isArray(timing)) {
+      if (!isObject(timing as unknown)) {
         throw new InvalidGraphError(`frame "${key}" timing must be an object`);
       }
       if (
@@ -136,7 +141,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   // --- compile transitions ------------------------------------------------
   const compiled: CompiledTransition[] = [];
   graph.transitions.forEach((t, order) => {
-    if ((t as unknown) === null || typeof (t as unknown) !== "object" || Array.isArray(t)) {
+    if (!isObject(t as unknown)) {
       throw new InvalidGraphError(`transition #${order} must be an object`);
     }
     if (t.when !== undefined && !Array.isArray(t.when)) {

@@ -14,6 +14,7 @@
 // a plain SpriteGraph. `loadAtlas` additionally builds the animator, surfacing
 // semantic errors (InvalidGraphError) eagerly.
 
+import { isObject } from "../sprite/compile.js";
 import {
   type FrameTiming,
   type InputDef,
@@ -53,10 +54,6 @@ export interface SpriteControl {
   readonly transitions: readonly TransitionDef[];
   readonly initial?: string;
   readonly defaultFrameDuration?: number;
-}
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 /**
