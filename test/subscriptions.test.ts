@@ -129,4 +129,35 @@ describe("emitter edge cases", () => {
     expect(A).toHaveBeenCalledTimes(1);
     expect(B).toHaveBeenCalledTimes(2);
   });
+
+  // B9: emitter abort-before-fire.
+  // Register onStateChange and onComplete with { once, signal }, abort the controller
+  // BEFORE any state change, then cause a state change — the handlers must never fire
+  // and no internal corruption should occur (a normal listener still works).
+  it("abort-before-fire: { once, signal } handler never invoked after pre-fire abort", () => {
+    const a = createSpriteAnimator(platformer());
+    const abortedHandler = vi.fn();
+    const normalHandler = vi.fn();
+    const abortedComplete = vi.fn();
+
+    const ctrl = new AbortController();
+    // Register with { once, signal } on both channels.
+    a.onStateChange(abortedHandler, { once: true, signal: ctrl.signal });
+    a.onComplete(abortedComplete, { once: true, signal: ctrl.signal });
+    // Register a normal (no signal) listener to verify it still works after abort.
+    a.onStateChange(normalHandler);
+
+    // Abort BEFORE any state change.
+    ctrl.abort();
+
+    // Now cause a state change (idle → walk).
+    toWalk(a);
+
+    // The aborted handler must have never been called.
+    expect(abortedHandler).not.toHaveBeenCalled();
+    // The normal listener still works — no internal corruption.
+    expect(normalHandler).toHaveBeenCalledOnce();
+    // onComplete handler also never called (no clip completion here, just verifying no crash).
+    expect(abortedComplete).not.toHaveBeenCalled();
+  });
 });

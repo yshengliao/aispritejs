@@ -27,7 +27,7 @@ inputs ─▶ [transition graph] ─▶ active state ─▶ (Δt) ─▶ active 
 
 - **Inputs** — `Number` (continuous, e.g. `speed`), `Boolean` (toggle, e.g. `isGrounded`), `Trigger` (one-shot; auto-resets after a transition consumes it, e.g. `jump` / `attack`).
 - **States** — an animation key (into the atlas `animations`) + loop / on-end behaviour + optional speed multiplier.
-- **Transitions** — from a state (or **Any State**) to another when conditions over inputs hold (`Equals` / `NotEquals` / `GreaterThan` / `LessThan`). The highest-priority satisfied transition wins.
+- **Transitions** — from a state (or **Any State**) to another when conditions over inputs hold (`Equals` / `NotEquals` / `GreaterThan` / `LessThan` / `Trigger`). The highest-priority satisfied transition wins.
 - **`update(dt)`** — advances the playback timer; evaluates transitions (switching state, firing `onStateChange`, consuming triggers); computes the current frame from the animation's per-frame durations + loop; fires `onComplete` when a non-looping clip ends.
 
 ## Quick start — core (zero-dep)
@@ -200,7 +200,7 @@ pnpm example:platformer
 
 ## Status
 
-**v0.1.0 — full first release.** All roadmap modules (1–4) ship together: the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`). Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath. Versioning and release tags are cut by the maintainer.
+**v0.1.1 — OIDC/SLSA publish.** The npm tarball now carries SLSA build provenance (OIDC trusted-publisher pipeline). No source or API changes from v0.1.0, which shipped all roadmap modules (1–4): the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`). See [CHANGELOG.md](CHANGELOG.md) for the full history. Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath.
 
 ## Roadmap
 

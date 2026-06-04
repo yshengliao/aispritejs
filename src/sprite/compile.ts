@@ -44,6 +44,11 @@ export interface CompiledGraph {
 
 const DEFAULT_FRAME_DURATION = 100;
 
+/** @internal */
+export function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 export function compileGraph(graph: SpriteGraph): CompiledGraph {
   const stateEntries = Object.entries(graph.states);
   if (stateEntries.length === 0) {
@@ -61,20 +66,30 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   }
 
   const defaultDuration = graph.defaultFrameDuration ?? DEFAULT_FRAME_DURATION;
-  if (!(defaultDuration > 0)) {
-    throw new InvalidGraphError(`defaultFrameDuration must be > 0, got ${defaultDuration}`);
+  if (!Number.isFinite(defaultDuration) || defaultDuration <= 0) {
+    throw new InvalidGraphError(
+      `defaultFrameDuration must be a finite number > 0, got ${defaultDuration}`,
+    );
   }
 
   if (graph.frames) {
     for (const [key, timing] of Object.entries(graph.frames)) {
-      if (timing.duration !== undefined && !(timing.duration > 0)) {
-        throw new InvalidGraphError(`frame "${key}" duration must be > 0, got ${timing.duration}`);
+      if (!isObject(timing as unknown)) {
+        throw new InvalidGraphError(`frame "${key}" timing must be an object`);
+      }
+      if (
+        timing.duration !== undefined &&
+        (!Number.isFinite(timing.duration) || timing.duration <= 0)
+      ) {
+        throw new InvalidGraphError(
+          `frame "${key}" duration must be a finite number > 0, got ${timing.duration}`,
+        );
       }
     }
   }
 
   const initial = graph.initial ?? stateEntries[0]![0];
-  if (!(initial in graph.states)) {
+  if (!Object.hasOwn(graph.states, initial)) {
     throw new InvalidGraphError(`initial state "${initial}" is not declared`);
   }
 
@@ -82,15 +97,17 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   const states = new Map<string, CompiledState>();
   for (const [name, st] of stateEntries) {
     const frameKeys = graph.animations[st.animation];
-    if (frameKeys === undefined) {
+    if (frameKeys === undefined || !Object.hasOwn(graph.animations, st.animation)) {
       throw new InvalidGraphError(`state "${name}" references unknown animation "${st.animation}"`);
     }
     if (frameKeys.length === 0) {
       throw new InvalidGraphError(`animation "${st.animation}" (state "${name}") has no frames`);
     }
     const speed = st.speed ?? 1;
-    if (!(speed > 0)) {
-      throw new InvalidGraphError(`state "${name}" speed must be > 0, got ${speed}`);
+    if (!Number.isFinite(speed) || speed <= 0) {
+      throw new InvalidGraphError(
+        `state "${name}" speed must be a finite number > 0, got ${speed}`,
+      );
     }
     const loop = st.loop === true;
     if (loop && st.onEnd !== undefined) {
@@ -98,7 +115,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
         `state "${name}" loops, so onEnd "${st.onEnd}" would never fire; set loop:false or drop onEnd`,
       );
     }
-    if (st.onEnd !== undefined && !(st.onEnd in graph.states)) {
+    if (st.onEnd !== undefined && !Object.hasOwn(graph.states, st.onEnd)) {
       throw new InvalidGraphError(`state "${name}" onEnd target "${st.onEnd}" is not declared`);
     }
 
@@ -124,10 +141,16 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
   // --- compile transitions ------------------------------------------------
   const compiled: CompiledTransition[] = [];
   graph.transitions.forEach((t, order) => {
-    if (t.from !== "*" && !(t.from in graph.states)) {
+    if (!isObject(t as unknown)) {
+      throw new InvalidGraphError(`transition #${order} must be an object`);
+    }
+    if (t.when !== undefined && !Array.isArray(t.when)) {
+      throw new InvalidGraphError(`transition #${order} "when" must be an array`);
+    }
+    if (t.from !== "*" && !Object.hasOwn(graph.states, t.from)) {
       throw new InvalidGraphError(`transition #${order} from "${t.from}" is not a declared state`);
     }
-    if (!(t.to in graph.states)) {
+    if (!Object.hasOwn(graph.states, t.to)) {
       throw new InvalidGraphError(`transition #${order} to "${t.to}" is not a declared state`);
     }
 
@@ -135,7 +158,7 @@ export function compileGraph(graph: SpriteGraph): CompiledGraph {
     const triggers: string[] = [];
     for (const c of t.when ?? []) {
       const def = graph.inputs[c.input];
-      if (def === undefined) {
+      if (def === undefined || !Object.hasOwn(graph.inputs, c.input)) {
         throw new InvalidGraphError(
           `transition #${order} condition references unknown input "${c.input}"`,
         );

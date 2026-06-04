@@ -11,8 +11,9 @@
       "type": "object"
     },
     "animations": {
-      "description": "Animation name -> ordered list of frame keys (each non-empty).",
+      "description": "Animation name -> ordered list of frame keys (each non-empty). Must declare at least one animation.",
       "type": "object",
+      "minProperties": 1,
       "additionalProperties": {
         "type": "array",
         "items": { "type": "string" },

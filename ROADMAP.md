@@ -30,7 +30,7 @@
 - **Inputs**: `Number` / `Boolean` / `Trigger` (trigger auto-resets when a transition consumes it).
 - **`State`**: animation key + loop / on-end behaviour + optional speed multiplier.
 - **`TransitionCondition`** (operators `Equals` / `NotEquals` / `GreaterThan` / `LessThan`) + **`Transition`** (incl. **Any State**); deterministic priority resolution.
-- **`RiveSpriteStateMachine`**: `setInput` / `fireTrigger` / `update(dt)` → active state + active frame index; typed `onStateChange` / `onComplete` emitters.
+- **`SpriteAnimator`** (returned by `createSpriteAnimator`): `setInput` / `fireTrigger` / `update(dt)` → active state + active frame index; typed `onStateChange` / `onComplete` emitters.
 - Pure TS, zero deps. vitest behavioural tests + optional `fast-check` PBT (transition determinism, trigger consumption). `check:size` budget.
 
 ### v0.2.0 — PixiJS v8 adapter (`aispritejs/pixi`)

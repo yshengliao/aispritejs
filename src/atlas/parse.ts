@@ -14,6 +14,7 @@
 // a plain SpriteGraph. `loadAtlas` additionally builds the animator, surfacing
 // semantic errors (InvalidGraphError) eagerly.
 
+import { isObject } from "../sprite/compile.js";
 import {
   type FrameTiming,
   type InputDef,
@@ -53,10 +54,6 @@ export interface SpriteControl {
   readonly transitions: readonly TransitionDef[];
   readonly initial?: string;
   readonly defaultFrameDuration?: number;
-}
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 /**
@@ -103,6 +100,14 @@ export function parseAtlas(atlas: unknown, control?: SpriteControl): SpriteGraph
   if (frames !== undefined && !isObject(frames)) {
     throw new InvalidAtlasError("`frames`, if present, must be an object keyed by frame key");
   }
+  if (isObject(frames)) {
+    for (const [key, entry] of Object.entries(frames)) {
+      if (!isObject(entry)) {
+        const actualType = entry === null ? "null" : Array.isArray(entry) ? "array" : typeof entry;
+        throw new InvalidAtlasError(`frame entry "${key}" must be an object, got ${actualType}`);
+      }
+    }
+  }
 
   let resolved: SpriteControl;
   if (control) {
@@ -118,10 +123,30 @@ export function parseAtlas(atlas: unknown, control?: SpriteControl): SpriteGraph
         "atlas has no aispritejs control block (inputs/states/transitions); pass one as the second argument",
       );
     }
+    for (const [key, val] of Object.entries(atlas.inputs)) {
+      if (!isObject(val)) {
+        const actualType = val === null ? "null" : Array.isArray(val) ? "array" : typeof val;
+        throw new InvalidAtlasError(`input entry "${key}" must be an object, got ${actualType}`);
+      }
+    }
+    for (const [key, val] of Object.entries(atlas.states)) {
+      if (!isObject(val)) {
+        const actualType = val === null ? "null" : Array.isArray(val) ? "array" : typeof val;
+        throw new InvalidAtlasError(`state entry "${key}" must be an object, got ${actualType}`);
+      }
+    }
+    const rawTransitions = atlas.transitions as unknown[];
+    for (let i = 0; i < rawTransitions.length; i++) {
+      const entry = rawTransitions[i];
+      if (!isObject(entry)) {
+        const actualType = entry === null ? "null" : Array.isArray(entry) ? "array" : typeof entry;
+        throw new InvalidAtlasError(`transitions[${i}] must be an object, got ${actualType}`);
+      }
+    }
     resolved = {
       inputs: atlas.inputs as Record<string, InputDef>,
       states: atlas.states as Record<string, StateDef>,
-      transitions: atlas.transitions as readonly TransitionDef[],
+      transitions: rawTransitions as readonly TransitionDef[],
       ...(typeof atlas.initial === "string" ? { initial: atlas.initial } : {}),
       ...(typeof atlas.defaultFrameDuration === "number"
         ? { defaultFrameDuration: atlas.defaultFrameDuration }

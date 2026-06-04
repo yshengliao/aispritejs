@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- JSON Schema: `animations` now requires at least one entry (`minProperties: 1`), matching `states`
+  and the runtime (which already rejects an empty animations map via `InvalidGraphError`).
+
+### Fixed
+
+- Reject non-finite (`Infinity`/`NaN`) `speed`, `duration`, and `defaultFrameDuration` at compile
+  time (`InvalidGraphError`); clamp non-finite `dt` to 0 in `update()` — previously these silently
+  corrupted looping playback (frame stuck at 0 / `NaN` accumulation).
+
 ## [0.1.1] - 2026-06-03
 
 First release published through the OIDC `publish.yml` pipeline (npm trusted

@@ -30,8 +30,24 @@ describe("graph validation", () => {
     expectInvalid({ ...base(), defaultFrameDuration: 0 });
   });
 
+  it("rejects an infinite defaultFrameDuration", () => {
+    expect(() =>
+      createSpriteAnimator({ ...base(), defaultFrameDuration: Number.POSITIVE_INFINITY }),
+    ).toThrow(
+      new InvalidGraphError("defaultFrameDuration must be a finite number > 0, got Infinity"),
+    );
+  });
+
   it("rejects a non-positive frame duration", () => {
     expectInvalid({ ...base(), frames: { i0: { duration: -5 } } });
+  });
+
+  it("rejects an infinite frame duration", () => {
+    expect(() =>
+      createSpriteAnimator({ ...base(), frames: { i0: { duration: Number.POSITIVE_INFINITY } } }),
+    ).toThrow(
+      new InvalidGraphError(`frame "i0" duration must be a finite number > 0, got Infinity`),
+    );
   });
 
   it("rejects an unknown initial state", () => {
@@ -48,6 +64,17 @@ describe("graph validation", () => {
 
   it("rejects a non-positive state speed", () => {
     expectInvalid({ ...base(), states: { idle: { animation: "idle", speed: 0 } } });
+  });
+
+  it("rejects an infinite state speed", () => {
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        states: { idle: { animation: "idle", speed: Number.POSITIVE_INFINITY } },
+      }),
+    ).toThrow(
+      new InvalidGraphError(`state "idle" speed must be a finite number > 0, got Infinity`),
+    );
   });
 
   it("rejects onEnd combined with loop:true", () => {
@@ -139,6 +166,58 @@ describe("graph validation", () => {
     });
   });
 
+  it("rejects an array transition entry (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [[] as unknown as { from: string; to: string }],
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        transitions: [[] as unknown as { from: string; to: string }],
+      }),
+    ).toThrow(new InvalidGraphError("transition #0 must be an object"));
+  });
+
+  it("rejects a non-object frame timing entry (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      frames: { i0: null as unknown as { duration?: number } },
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        frames: { i0: null as unknown as { duration?: number } },
+      }),
+    ).toThrow(new InvalidGraphError(`frame "i0" timing must be an object`));
+  });
+
+  it("rejects a null transition entry (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [null as unknown as { from: string; to: string }],
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        transitions: [null as unknown as { from: string; to: string }],
+      }),
+    ).toThrow(new InvalidGraphError("transition #0 must be an object"));
+  });
+
+  it("rejects a non-array `when` on a transition (direct compileGraph hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [{ from: "idle", to: "idle", when: {} as unknown as never[] }],
+    });
+    expect(() =>
+      createSpriteAnimator({
+        ...base(),
+        transitions: [{ from: "idle", to: "idle", when: {} as unknown as never[] }],
+      }),
+    ).toThrow(new InvalidGraphError(`transition #0 "when" must be an array`));
+  });
+
   it("accepts a valid graph with all operator kinds", () => {
     expect(() =>
       createSpriteAnimator({
@@ -150,5 +229,55 @@ describe("graph validation", () => {
         ],
       }),
     ).not.toThrow();
+  });
+
+  // B8: NotEquals validation variants (compile errors).
+  it("rejects NotEquals on a trigger input", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "t", op: "NotEquals", value: 1 }] },
+      ],
+    });
+  });
+
+  it("rejects NotEquals on a number input with a non-numeric value", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "n", op: "NotEquals", value: true }] },
+      ],
+    });
+  });
+
+  it("rejects NotEquals on a boolean input with a non-boolean value", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "b", op: "NotEquals", value: 1 }] },
+      ],
+    });
+  });
+
+  // Prototype-key hardening: Object.prototype names must never be accepted as
+  // valid state, animation, or input references — they are not own properties.
+  it("rejects a prototype-key initial state (Object.hasOwn hardening)", () => {
+    expectInvalid({ ...base(), initial: "toString" });
+  });
+
+  it("rejects a state referencing a prototype-key animation (Object.hasOwn hardening)", () => {
+    expectInvalid({
+      ...base(),
+      states: { idle: { animation: "constructor" } },
+    });
+  });
+
+  it("rejects a transition condition on a prototype-key input name (Object.hasOwn hardening)", () => {
+    expectInvalid({
+      ...base(),
+      transitions: [
+        { from: "idle", to: "idle", when: [{ input: "hasOwnProperty", op: "Trigger" }] },
+      ],
+    });
   });
 });

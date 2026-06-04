@@ -262,6 +262,30 @@ describe("frame timing", () => {
     a.update(-1000);
     expect(a.activeFrameIndex).toBe(0);
   });
+
+  it("clamps non-finite dt (Infinity / NaN) to zero so elapsed is not poisoned", () => {
+    // Use a looping clip; if elapsed became Infinity or NaN the frame would
+    // snap to 0 permanently and a subsequent finite update could not advance it.
+    const a = createSpriteAnimator(platformer());
+    a.setInput("speed", 1);
+    a.update(0); // → walk, frame 0
+    expect(a.activeState).toBe("walk");
+    expect(a.activeFrameIndex).toBe(0);
+
+    // Non-finite ticks must behave like update(0): no frame advance.
+    a.update(Number.POSITIVE_INFINITY);
+    expect(a.activeFrameIndex).toBe(0);
+    expect(a.activeFrameKey).toBe("walk_0");
+
+    a.update(Number.NaN);
+    expect(a.activeFrameIndex).toBe(0);
+    expect(a.activeFrameKey).toBe("walk_0");
+
+    // Elapsed must not have been poisoned — a normal tick should still advance.
+    a.update(100); // walk frames are 100 ms each → should reach frame 1
+    expect(a.activeFrameIndex).toBe(1);
+    expect(a.activeFrameKey).toBe("walk_1");
+  });
 });
 
 describe("onComplete and onEnd", () => {
@@ -400,5 +424,88 @@ describe("determinism", () => {
       return frames;
     };
     expect(run()).toEqual(run());
+  });
+});
+
+// B6: self-onEnd
+// A non-looping state whose `onEnd` is its own name: each time the clip finishes,
+// onComplete fires again and the animator re-enters the same state (restarting it).
+// No onStateChange fires because re-entry of the same state is NOT a state change.
+// This repeating behavior is intentional: the clip loops via the onEnd mechanism
+// rather than via `loop: true`.
+describe("self-onEnd", () => {
+  it("fires onComplete again on each subsequent completion and no onStateChange", () => {
+    const a = createSpriteAnimator({
+      animations: { flash: ["f0", "f1"] },
+      frames: { f0: { duration: 100 }, f1: { duration: 100 } },
+      inputs: {},
+      states: { flash: { animation: "flash", loop: false, onEnd: "flash" } },
+      transitions: [],
+      initial: "flash",
+    });
+    const completeCalls: string[] = [];
+    const changeCalls: string[] = [];
+    a.onComplete((s) => completeCalls.push(s));
+    a.onStateChange((to, from) => changeCalls.push(`${from}→${to}`));
+
+    // First completion (total = 200ms).
+    a.update(200);
+    expect(completeCalls).toEqual(["flash"]);
+    expect(changeCalls).toEqual([]); // self-re-entry is NOT a state change
+
+    // Second completion — onEnd re-enters flash, which completes again.
+    a.update(200);
+    expect(completeCalls).toEqual(["flash", "flash"]);
+    expect(changeCalls).toEqual([]); // still no state change
+
+    // Third completion.
+    a.update(200);
+    expect(completeCalls).toHaveLength(3);
+    expect(changeCalls).toEqual([]); // no state change throughout
+  });
+});
+
+// B7: onEnd chain
+// A (non-looping, onEnd:B) → B (non-looping, onEnd:C): onComplete fires once per
+// state in order and the animator ends in C.
+// Design note: each update() call processes exactly one state completion; the onEnd
+// auto-transition *enters* the next state but does not recursively complete it in
+// the same tick. So stateA→stateB happens on update(100), stateB→stateC on the
+// next update(100), and stateC completes on the third update(100).
+describe("onEnd chain", () => {
+  it("chains A→B→C via onEnd and fires onComplete once per state in order", () => {
+    const a = createSpriteAnimator({
+      animations: { stateA: ["a0"], stateB: ["b0"], stateC: ["c0"] },
+      frames: { a0: { duration: 100 }, b0: { duration: 100 }, c0: { duration: 100 } },
+      inputs: {},
+      states: {
+        stateA: { animation: "stateA", loop: false, onEnd: "stateB" },
+        stateB: { animation: "stateB", loop: false, onEnd: "stateC" },
+        stateC: { animation: "stateC", loop: false },
+      },
+      transitions: [],
+      initial: "stateA",
+    });
+    const completions: string[] = [];
+    const changes: string[] = [];
+    a.onComplete((s) => completions.push(s));
+    a.onStateChange((to, from) => changes.push(`${from}→${to}`));
+
+    // First tick: stateA completes and auto-transitions to stateB.
+    a.update(100);
+    expect(completions).toEqual(["stateA"]);
+    expect(a.activeState).toBe("stateB");
+    expect(changes).toEqual(["stateA→stateB"]);
+
+    // Second tick: stateB completes and auto-transitions to stateC.
+    a.update(100);
+    expect(completions).toEqual(["stateA", "stateB"]);
+    expect(a.activeState).toBe("stateC");
+    expect(changes).toEqual(["stateA→stateB", "stateB→stateC"]);
+
+    // Third tick: stateC completes (no onEnd, stays in stateC).
+    a.update(100);
+    expect(completions).toEqual(["stateA", "stateB", "stateC"]);
+    expect(a.activeState).toBe("stateC"); // no onEnd, stays put
   });
 });
