@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-05
+
+### Added
+
+- Docs: a "When you DON'T need aispritejs" threshold section and a complete, runnable 6-frame
+  explosion (play-once FX) `/pixi` quickstart (`examples/02-explosion-pixi`); no source/API changes.
+
 ## [0.1.2] - 2026-06-05
 
 ### Changed
@@ -133,6 +140,8 @@ parser, and JSON Schema (roadmap modules 1–4).
   / lines (above the family floor of 95 / 90 / 100 / 100). Core gzip ≈ 3.5 KB.
 - OIDC + SLSA provenance publish on tag-push.
 
-[Unreleased]: https://github.com/yshengliao/aispritejs/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/yshengliao/aispritejs/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/yshengliao/aispritejs/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/yshengliao/aispritejs/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/yshengliao/aispritejs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/yshengliao/aispritejs/releases/tag/v0.1.0

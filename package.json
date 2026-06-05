@@ -1,6 +1,6 @@
 {
   "name": "aispritejs",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Input-driven, renderer-agnostic 2D sprite animation runtime — a tiny, Rive-like visual state machine driven by Number / Boolean / Trigger inputs. JSON transition graph, deterministic update(dt), zero runtime dependencies. Browser / Node / Bun / Deno / WebView / Worker friendly.",
   "keywords": [
     "sprite",
@@ -73,6 +73,7 @@
     "verify:llms": "node scripts/build-llms-full.mjs --check",
     "coverage": "vitest run --coverage",
     "example:platformer": "tsx examples/01-platformer-inputs/index.ts",
+    "example:explosion": "tsx examples/02-explosion-pixi/index.ts",
     "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm coverage && pnpm build && pnpm verify:exports && pnpm verify:llms && pnpm check:size"
   },
   "peerDependencies": {
