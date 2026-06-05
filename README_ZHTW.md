@@ -123,7 +123,7 @@ fx.fireTrigger("detonate");
 // 毫秒數推進：`app.ticker.add((ticker) => fx.update(ticker.deltaMS))`。
 ```
 
-`update(dt)` 把 `explosion_0…explosion_5` 走過一次（尊重每一格的 `duration`），停在最後一格，接著 `onEnd` 回到 `idle`。再次 `fireTrigger("detonate")` 即可重播。同一份 graph 在沒有渲染器時也能跑 —— 見 [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts)，它以純 `Texture` / `Sprite` 實例、在無頭環境下操練真正的轉接器。
+`update(dt)` 把 `explosion_0…explosion_5` 播放一次（尊重每一格的 `duration`）；在播完片段的那一個 tick，它會觸發 `onComplete`，並因為 `boom` 宣告了 `onEnd`，在**同一個** tick 內自動轉移回 `idle` —— 所以不會停在最後一格，呼叫之後 `activeState` 立即讀到 `idle`。再次 `fireTrigger("detonate")` 即可重播。同一份 graph 在沒有渲染器時也能跑 —— 見 [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts)，它以純 `Texture` / `Sprite` 實例、在無頭環境下操練真正的轉接器。
 
 ## 資料格式（atlas）
 
@@ -253,7 +253,7 @@ pnpm example:platformer
 
 ## 狀態
 
-**v0.1.3 —— 文件修補。** 新增「何時你『不需要』aispritejs」門檻，以及一個完整、可執行、針對 `/pixi` 轉接器的 6 格爆炸（play-once FX）快速範例；原始碼與 API 無變動。v0.1.0 一併 ship 所有 roadmap 模組 1–4：與渲染器無關的核心（`.`）、PixiJS v8 轉接器（`aispritejs/pixi`）、atlas parser（`aispritejs/atlas`）、JSON Schema（`aispritejs/schema`）；v0.1.1 加上 OIDC/SLSA 發佈 provenance，v0.1.2 強化編譯期驗證（非有限的 `speed` / `duration` / `dt`）。完整歷史請見 [CHANGELOG.md](CHANGELOG.md)。零執行期相依；根 import 圖不含 `pixi.js`；`pixi.js` 是選用、type-only 的 peer，僅 `/pixi` 子路徑用。
+**v0.1.3 —— 文件修補。** 新增「何時你『不需要』aispritejs」門檻，以及一個完整、可執行、針對 `/pixi` 轉接器的 6 格爆炸（play-once FX）快速範例；原始碼與 API 無變動。v0.1.0 一併 ship 所有 roadmap 模組 1–4：與渲染器無關的核心（`.`）、PixiJS v8 轉接器（`aispritejs/pixi`）、atlas parser（`aispritejs/atlas`）、JSON Schema（`aispritejs/schema`）；v0.1.1 加上 OIDC/SLSA 發佈 provenance，v0.1.2 強化驗證 —— 在編譯期拒絕非有限的 `speed` / `duration` / `defaultFrameDuration`，並在 `update()` 執行期把非有限的 `dt` 夾到 `0`。完整歷史請見 [CHANGELOG.md](CHANGELOG.md)。零執行期相依；根 import 圖不含 `pixi.js`；`pixi.js` 是選用、type-only 的 peer，僅 `/pixi` 子路徑用。
 
 `aispritejs` 是 **ai\*js** 家族中最新的套件，採用**自己獨立的版本線** —— `0.1.x` 系列反映的是這個套件自身的成熟度，而非與任何手足套件的版本號對齊。在某個遊戲裡使用率低（例如以靜態 sprite 為主的遊戲）是正常現象，並非缺陷。
 
