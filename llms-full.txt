@@ -134,8 +134,8 @@ const fx = createPixiSpriteAnimator(sprite, graph, sheet);
 // Fire the one-shot trigger on impact:
 fx.fireTrigger("detonate");
 
-// In your render loop (e.g. app.ticker), drive the burst:
-app.ticker.add((ticker) => fx.update(ticker.deltaMS));
+// Drive the burst from your PixiJS render loop (e.g. `app.ticker`), advancing by
+// elapsed ms: `app.ticker.add((ticker) => fx.update(ticker.deltaMS))`.
 ```
 
 `update(dt)` walks `explosion_0…explosion_5` once (honouring each frame's `duration`), holds the last frame, then `onEnd` returns to `idle`. Re-`fireTrigger("detonate")` to replay. The same graph runs with no renderer — see [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts), which exercises the real adapter headlessly with plain `Texture` / `Sprite` instances.
