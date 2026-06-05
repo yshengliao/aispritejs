@@ -23,12 +23,12 @@
 
 `aispritejs` 的價值在於影格選擇是**由執行期輸入驅動**、且橫跨**數個視覺狀態**時才會顯現。在這個門檻之下，直接用 PixiJS 就好 —— 用狀態機並無任何好處：
 
-- **單一 sprite／一張靜態圖片** → 純 PixiJS [`Sprite`](https://pixijs.download/release/docs/scene.Sprite.html)。沒有動畫、沒有圖。
+- **單一 sprite／一張靜態圖片** → 純 PixiJS [`Sprite`](https://pixijs.download/release/docs/scene.Sprite.html)。沒有動畫、不需要圖集。
 - **單一循環片段、無任何分支**（轉動的金幣、閃爍的火把）→ PixiJS [`AnimatedSprite`](https://pixijs.download/release/docs/scene.AnimatedSprite.html)（`AnimatedSprite.fromFrames(...)`、`.play()`）。永遠以同一種方式播放的單一片段不需要輸入。
 - **沒有 texture atlas**（你並未把影格打包成 spritesheet）→ 直接載入圖片；`aispritejs` 從 PixiJS-v8 atlas（`animations` / `frames`）讀取它的影格。
 - **沒有多狀態切換** —— 若你的程式早已確切知道要播哪個片段、只需呼叫 `.play()` / `.gotoAndStop()`，你並不需要轉移圖。
 
-當你有**由輸入驅動、以 texture atlas 為後盾的多狀態視覺切換**時，才該動用 `aispritejs` —— 例如 `idle ⇄ walk → jump`，或由 trigger 觸發的一次性受擊 FX —— 此時畫面上顯示哪一格是 `speed` / `isGrounded` / `attack` 的函式，而非寫死的 `play()` 呼叫。
+當你有**由輸入驅動、以 texture atlas 為後盾的多狀態視覺切換**時，才該動用 `aispritejs` —— 例如 `idle ⇄ walk → jump`，或由 trigger 觸發的一次性受擊 FX —— 此時畫面上顯示哪一格是 `speed` / `isGrounded` / `attack` 的函數，而非寫死的 `play()` 呼叫。
 
 ## 心智模型
 
