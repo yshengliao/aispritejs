@@ -125,7 +125,7 @@ fx.fireTrigger("detonate");
 // elapsed ms: `app.ticker.add((ticker) => fx.update(ticker.deltaMS))`.
 ```
 
-`update(dt)` walks `explosion_0…explosion_5` once (honouring each frame's `duration`), holds the last frame, then `onEnd` returns to `idle`. Re-`fireTrigger("detonate")` to replay. The same graph runs with no renderer — see [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts), which exercises the real adapter headlessly with plain `Texture` / `Sprite` instances.
+`update(dt)` plays `explosion_0…explosion_5` once (honouring each frame's `duration`); on the tick that completes the clip it fires `onComplete` and, because `boom` declares `onEnd`, auto-transitions to `idle` in that **same** tick — so the last frame isn't held, and `activeState` reads `idle` right after. Re-`fireTrigger("detonate")` to replay. The same graph runs with no renderer — see [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts), which exercises the real adapter headlessly with plain `Texture` / `Sprite` instances.
 
 ## Data format (atlas)
 
@@ -210,7 +210,7 @@ Every subscription returns an unsubscribe function and accepts `{ signal }` (an 
 
 These rules are deterministic and frozen for the 1.x line once 1.0 ships:
 
-- **`update(dt)` order** — advance the timer by `dt × speed` (negative `dt` clamps to `0`); evaluate transitions; recompute the active frame; fire `onComplete` for a finished non-looping clip and then any `onEnd` auto-transition. An explicit input transition therefore wins over end-of-clip behaviour on the same frame.
+- **`update(dt)` order** — advance the timer by `dt × speed` (non-finite or non-positive `dt` clamps to `0`); evaluate transitions; recompute the active frame; fire `onComplete` for a finished non-looping clip and then any `onEnd` auto-transition. An explicit input transition therefore wins over end-of-clip behaviour on the same frame.
 - **Transition resolution** — among the transitions leaving the current state (plus **Any-State** `from: "*"`), candidates are ordered by `priority` (desc) then declared order (asc); the **first effective** one is taken. All `when` conditions must hold (logical AND).
 - **Self-transition rule** — a transition whose `to` equals the current state is *effective only if it consumes a Trigger*. A Number/Boolean self-loop is skipped, so it cannot reset the clip to frame 0 every frame. A trigger-bearing self-transition **restarts** the clip (e.g. re-attack) but does **not** fire `onStateChange` (the state name is unchanged).
 - **Triggers** — `fireTrigger(name)` marks a trigger pending; it stays pending across frames until a transition that checks it is taken, which **consumes** it. One fire → at most one transition.
@@ -256,7 +256,7 @@ pnpm example:explosion   # 6-frame play-once FX via the /pixi adapter
 
 ## Status
 
-**v0.1.3 — docs patch.** Adds a "When you DON'T need aispritejs" threshold and a complete, runnable 6-frame explosion (play-once FX) quickstart for the `/pixi` adapter; no source or API changes. v0.1.0 shipped all roadmap modules (1–4): the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`); v0.1.1 added OIDC/SLSA publish provenance and v0.1.2 hardened compile-time validation (non-finite `speed` / `duration` / `dt`). See [CHANGELOG.md](CHANGELOG.md) for the full history. Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath.
+**v0.1.3 — docs patch.** Adds a "When you DON'T need aispritejs" threshold and a complete, runnable 6-frame explosion (play-once FX) quickstart for the `/pixi` adapter; no source or API changes. v0.1.0 shipped all roadmap modules (1–4): the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`); v0.1.1 added OIDC/SLSA publish provenance and v0.1.2 hardened validation — compile-time rejection of non-finite `speed` / `duration` / `defaultFrameDuration`, plus a runtime clamp of non-finite or non-positive `dt` (`dt <= 0`) to `0` in `update()`. See [CHANGELOG.md](CHANGELOG.md) for the full history. Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath.
 
 `aispritejs` is the newest package in the **ai\*js** family and follows its **own independent version line** — the `0.1.x` series reflects this package's own maturation, not alignment with any sibling's version number. Low usage in a given game (e.g. one built on static sprites) is expected, not a defect.
 
