@@ -19,6 +19,17 @@
 - **視覺 ≠ 邏輯。** 這嚴格來說是一個*視覺*動畫器，**不是**遊戲邏輯 FSM，也**不**相依 `aifsmjs`。用任何邏輯層（純程式、FSM、ECS）來驅動它 —— 它們以慣例組合，從不以相依耦合。
 - **輕巧又快。** O(1) 的輸入查找、對離開當前狀態的轉移做 O(N) 檢查、無每幀配置。
 
+## 何時你「不需要」aispritejs
+
+`aispritejs` 的價值在於影格選擇是**由執行期輸入驅動**、且橫跨**數個視覺狀態**時才會顯現。在這個門檻之下，直接用 PixiJS 就好 —— 用狀態機並無任何好處：
+
+- **單一 sprite／一張靜態圖片** → 純 PixiJS [`Sprite`](https://pixijs.download/release/docs/scene.Sprite.html)。沒有動畫、沒有圖。
+- **單一循環片段、無任何分支**（轉動的金幣、閃爍的火把）→ PixiJS [`AnimatedSprite`](https://pixijs.download/release/docs/scene.AnimatedSprite.html)（`AnimatedSprite.fromFrames(...)`、`.play()`）。永遠以同一種方式播放的單一片段不需要輸入。
+- **沒有 texture atlas**（你並未把影格打包成 spritesheet）→ 直接載入圖片；`aispritejs` 從 PixiJS-v8 atlas（`animations` / `frames`）讀取它的影格。
+- **沒有多狀態切換** —— 若你的程式早已確切知道要播哪個片段、只需呼叫 `.play()` / `.gotoAndStop()`，你並不需要轉移圖。
+
+當你有**由輸入驅動、以 texture atlas 為後盾的多狀態視覺切換**時，才該動用 `aispritejs` —— 例如 `idle ⇄ walk → jump`，或由 trigger 觸發的一次性受擊 FX —— 此時畫面上顯示哪一格是 `speed` / `isGrounded` / `attack` 的函式，而非寫死的 `play()` 呼叫。
+
 ## 心智模型
 
 ```
@@ -69,6 +80,50 @@ view.fireTrigger("jump");
 ```
 
 它只在當前影格改變時換 texture，並尊重逐影格 `duration`（透過核心）與非置中／腳底樞軸（透過 `texture.defaultAnchor`；傳 `{ applyAnchor: false }` 可自行管理 anchor）。`view.sprite` 是綁定的 sprite；`dispose()` 拆除核心但不銷毀 sprite。
+
+### 完整範例 —— 一段 6 格爆炸（play-once FX）
+
+最常見的入門場景：一次性的受擊／撞擊 FX（水花、槍口閃光），來自一張 **6 格爆炸 sprite sheet**，透過 `/pixi` 轉接器驅動。一個 `Trigger` 觸發一段**非循環**片段，播放一次後經由 `onEnd` 自動回到靜止影格。完整可執行版本在 [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts)（`pnpm example:explosion`）。
+
+```ts
+import { Assets, Sprite } from "pixi.js";
+import { createPixiSpriteAnimator } from "aispritejs/pixi";
+
+// 一張 6 格爆炸 sprite sheet（PixiJS-v8 atlas）：`animations` 區塊把片段
+// 命名 → 它的影格鍵；`frames` 帶有逐影格時長。
+const graph = {
+  animations: {
+    explosion: ["explosion_0", "explosion_1", "explosion_2", "explosion_3", "explosion_4", "explosion_5"],
+    idle: ["explosion_0"], // 一段 1 格的靜止片段，在每次爆發之間維持
+  },
+  frames: {
+    explosion_0: { duration: 40 }, explosion_1: { duration: 40 }, explosion_2: { duration: 40 },
+    explosion_3: { duration: 40 }, explosion_4: { duration: 40 }, explosion_5: { duration: 40 },
+  },
+  inputs: { detonate: { type: "trigger" } },
+  states: {
+    idle: { animation: "idle", loop: true },
+    boom: { animation: "explosion", loop: false, onEnd: "idle" }, // 播放一次 → 回到 idle
+  },
+  transitions: [
+    { from: "*", to: "boom", when: [{ input: "detonate", op: "Trigger" }], priority: 10 },
+  ],
+  initial: "idle",
+} as const;
+
+// 載入打包好的 sheet；它的 `.textures` 涵蓋 graph 用到的每一個影格鍵。
+const sheet = await Assets.load("explosion.json"); // 一個 PIXI.Spritesheet
+const sprite = new Sprite();
+const fx = createPixiSpriteAnimator(sprite, graph, sheet);
+
+// 在撞擊時觸發一次性 trigger：
+fx.fireTrigger("detonate");
+
+// 從你的 PixiJS render loop（例如 `app.ticker`）驅動這段爆發，依經過的
+// 毫秒數推進：`app.ticker.add((ticker) => fx.update(ticker.deltaMS))`。
+```
+
+`update(dt)` 把 `explosion_0…explosion_5` 走過一次（尊重每一格的 `duration`），停在最後一格，接著 `onEnd` 回到 `idle`。再次 `fireTrigger("detonate")` 即可重播。同一份 graph 在沒有渲染器時也能跑 —— 見 [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts)，它以純 `Texture` / `Sprite` 實例、在無頭環境下操練真正的轉接器。
 
 ## 資料格式（atlas）
 
