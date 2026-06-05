@@ -19,6 +19,17 @@ Part of the **ai\*js** family: zero cross-package dependencies, framework-agnost
 - **Visual ≠ logic.** This is strictly a *visual* animator. It is **not** a game-logic FSM and does **not** depend on `aifsmjs`. Drive it from any logic layer (plain code, an FSM, an ECS) — they compose by convention, never by dependency.
 - **Tiny + fast.** O(1) input lookups, O(N) checks over transitions leaving the current state, no per-frame allocation.
 
+## When you DON'T need aispritejs
+
+`aispritejs` earns its keep when frame selection is **driven by runtime inputs** across **several visual states**. Below that threshold, reach for PixiJS directly — there is nothing to gain from a state machine:
+
+- **A single sprite / one static image** → a plain PixiJS [`Sprite`](https://pixijs.download/release/docs/scene.Sprite.html). No animation, no graph.
+- **One looping clip with no branching** (a coin spin, a torch flicker) → a PixiJS [`AnimatedSprite`](https://pixijs.download/release/docs/scene.AnimatedSprite.html) (`AnimatedSprite.fromFrames(...)`, `.play()`). One clip that always plays the same way needs no inputs.
+- **No texture atlas** (you aren't packing frames into a spritesheet) → load images directly; `aispritejs` reads its frames from a PixiJS-v8 atlas (`animations` / `frames`).
+- **No multi-state switching** — if your code already knows exactly which clip to play and just calls `.play()` / `.gotoAndStop()`, you don't need a transition graph.
+
+Reach for `aispritejs` when you have **input-driven, multi-state visual switching backed by a texture atlas** — e.g. `idle ⇄ walk → jump`, or a one-shot hit FX fired by a trigger — where which frame is on screen is a function of `speed` / `isGrounded` / `attack`, not a hard-coded `play()` call.
+
 ## Mental model
 
 ```
@@ -71,6 +82,50 @@ view.fireTrigger("jump");
 It swaps the texture only when the active frame changes, and honours per-frame `duration` (via the core) and non-centre / foot pivots (via `texture.defaultAnchor`; pass `{ applyAnchor: false }` to manage the anchor yourself). `view.sprite` is the bound sprite; `dispose()` tears down the core without destroying the sprite.
 
 Pass a plain `Sprite` — the adapter owns frame selection. (An `AnimatedSprite` is accepted since it extends `Sprite`, but its own playback is stopped on bind so it cannot fight the adapter for the texture.)
+
+### Complete example — a 6-frame explosion (play-once FX)
+
+The most common entry: a one-shot hit/impact FX (net-splash, muzzle flash) from a **6-frame explosion sprite sheet**, driven through the `/pixi` adapter. A `Trigger` fires a **non-looping** clip that plays once and auto-returns to a resting frame via `onEnd`. The full runnable version is [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts) (`pnpm example:explosion`).
+
+```ts
+import { Assets, Sprite } from "pixi.js";
+import { createPixiSpriteAnimator } from "aispritejs/pixi";
+
+// A 6-frame explosion sprite sheet (PixiJS-v8 atlas): the `animations` block
+// names the clip → its frame keys; `frames` carries per-frame durations.
+const graph = {
+  animations: {
+    explosion: ["explosion_0", "explosion_1", "explosion_2", "explosion_3", "explosion_4", "explosion_5"],
+    idle: ["explosion_0"], // a 1-frame resting clip to hold between bursts
+  },
+  frames: {
+    explosion_0: { duration: 40 }, explosion_1: { duration: 40 }, explosion_2: { duration: 40 },
+    explosion_3: { duration: 40 }, explosion_4: { duration: 40 }, explosion_5: { duration: 40 },
+  },
+  inputs: { detonate: { type: "trigger" } },
+  states: {
+    idle: { animation: "idle", loop: true },
+    boom: { animation: "explosion", loop: false, onEnd: "idle" }, // play once → back to idle
+  },
+  transitions: [
+    { from: "*", to: "boom", when: [{ input: "detonate", op: "Trigger" }], priority: 10 },
+  ],
+  initial: "idle",
+} as const;
+
+// Load the packed sheet; its `.textures` cover every frame key the graph uses.
+const sheet = await Assets.load("explosion.json"); // a PIXI.Spritesheet
+const sprite = new Sprite();
+const fx = createPixiSpriteAnimator(sprite, graph, sheet);
+
+// Fire the one-shot trigger on impact:
+fx.fireTrigger("detonate");
+
+// In your render loop (e.g. app.ticker), drive the burst:
+app.ticker.add((ticker) => fx.update(ticker.deltaMS));
+```
+
+`update(dt)` walks `explosion_0…explosion_5` once (honouring each frame's `duration`), holds the last frame, then `onEnd` returns to `idle`. Re-`fireTrigger("detonate")` to replay. The same graph runs with no renderer — see [`examples/02-explosion-pixi/index.ts`](examples/02-explosion-pixi/index.ts), which exercises the real adapter headlessly with plain `Texture` / `Sprite` instances.
 
 ## Data format (atlas)
 
@@ -195,12 +250,15 @@ Behavioural `vitest` suites cover inputs, transitions, trigger consumption, fram
 ```bash
 pnpm test        # run once
 pnpm coverage    # with thresholds
-pnpm example:platformer
+pnpm example:platformer  # renderer-free core demo
+pnpm example:explosion   # 6-frame play-once FX via the /pixi adapter
 ```
 
 ## Status
 
-**v0.1.1 — OIDC/SLSA publish.** The npm tarball now carries SLSA build provenance (OIDC trusted-publisher pipeline). No source or API changes from v0.1.0, which shipped all roadmap modules (1–4): the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`). See [CHANGELOG.md](CHANGELOG.md) for the full history. Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath.
+**v0.1.3 — docs patch.** Adds a "When you DON'T need aispritejs" threshold and a complete, runnable 6-frame explosion (play-once FX) quickstart for the `/pixi` adapter; no source or API changes. v0.1.0 shipped all roadmap modules (1–4): the renderer-agnostic core (`.`), the PixiJS v8 adapter (`aispritejs/pixi`), the atlas parser (`aispritejs/atlas`), and the JSON Schema (`aispritejs/schema`); v0.1.1 added OIDC/SLSA publish provenance and v0.1.2 hardened compile-time validation (non-finite `speed` / `duration` / `dt`). See [CHANGELOG.md](CHANGELOG.md) for the full history. Zero runtime dependencies; the root import graph contains no `pixi.js`; `pixi.js` is an optional, type-only peer used only by the `/pixi` subpath.
+
+`aispritejs` is the newest package in the **ai\*js** family and follows its **own independent version line** — the `0.1.x` series reflects this package's own maturation, not alignment with any sibling's version number. Low usage in a given game (e.g. one built on static sprites) is expected, not a defect.
 
 ## Roadmap
 
