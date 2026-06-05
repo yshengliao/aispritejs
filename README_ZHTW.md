@@ -202,7 +202,7 @@ anim.disposed;          // boolean
 
 這些規則是決定性的，並在 1.0 推出後對 1.x 凍結：
 
-- **`update(dt)` 順序** —— 以 `dt × speed` 推進計時器（負的 `dt` 夾到 `0`）；評估轉移；重算當前影格；為播完的非循環片段觸發 `onComplete`，接著執行任何 `onEnd` 自動轉移。因此同一幀內，明確的輸入轉移優先於片段結束行為。
+- **`update(dt)` 順序** —— 以 `dt × speed` 推進計時器（非有限或非正值的 `dt` 夾到 `0`）；評估轉移；重算當前影格；為播完的非循環片段觸發 `onComplete`，接著執行任何 `onEnd` 自動轉移。因此同一幀內，明確的輸入轉移優先於片段結束行為。
 - **轉移解析** —— 在離開當前狀態的轉移（加上 **Any-State** `from: "*"`）中，候選依 `priority`（遞減）再依宣告順序（遞增）排序；取**第一個有效**者。所有 `when` 條件須全部成立（邏輯 AND）。
 - **自我轉移規則** —— `to` 等於當前狀態的轉移，*只有在它消耗一個 Trigger 時才有效*。純 Number/Boolean 的自我迴圈會被跳過，因此不會每幀把片段重置回第 0 格。帶 trigger 的自我轉移會**重啟**片段（例如連續攻擊），但**不**觸發 `onStateChange`（狀態名稱沒變）。
 - **Triggers** —— `fireTrigger(name)` 把某 trigger 標記為 pending；它跨幀保持 pending，直到某個檢查它的轉移被採用而**消耗**它。一次 fire → 至多一次轉移。
@@ -253,7 +253,7 @@ pnpm example:platformer
 
 ## 狀態
 
-**v0.1.3 —— 文件修補。** 新增「何時你『不需要』aispritejs」門檻，以及一個完整、可執行、針對 `/pixi` 轉接器的 6 格爆炸（play-once FX）快速範例；原始碼與 API 無變動。v0.1.0 一併 ship 所有 roadmap 模組 1–4：與渲染器無關的核心（`.`）、PixiJS v8 轉接器（`aispritejs/pixi`）、atlas parser（`aispritejs/atlas`）、JSON Schema（`aispritejs/schema`）；v0.1.1 加上 OIDC/SLSA 發佈 provenance，v0.1.2 強化驗證 —— 在編譯期拒絕非有限的 `speed` / `duration` / `defaultFrameDuration`，並在 `update()` 執行期把非有限的 `dt` 夾到 `0`。完整歷史請見 [CHANGELOG.md](CHANGELOG.md)。零執行期相依；根 import 圖不含 `pixi.js`；`pixi.js` 是選用、type-only 的 peer，僅 `/pixi` 子路徑用。
+**v0.1.3 —— 文件修補。** 新增「何時你『不需要』aispritejs」門檻，以及一個完整、可執行、針對 `/pixi` 轉接器的 6 格爆炸（play-once FX）快速範例；原始碼與 API 無變動。v0.1.0 一併 ship 所有 roadmap 模組 1–4：與渲染器無關的核心（`.`）、PixiJS v8 轉接器（`aispritejs/pixi`）、atlas parser（`aispritejs/atlas`）、JSON Schema（`aispritejs/schema`）；v0.1.1 加上 OIDC/SLSA 發佈 provenance，v0.1.2 強化驗證 —— 在編譯期拒絕非有限的 `speed` / `duration` / `defaultFrameDuration`，並在 `update()` 執行期把非有限或非正值（`dt <= 0`）的 `dt` 夾到 `0`。完整歷史請見 [CHANGELOG.md](CHANGELOG.md)。零執行期相依；根 import 圖不含 `pixi.js`；`pixi.js` 是選用、type-only 的 peer，僅 `/pixi` 子路徑用。
 
 `aispritejs` 是 **ai\*js** 家族中最新的套件，採用**自己獨立的版本線** —— `0.1.x` 系列反映的是這個套件自身的成熟度，而非與任何手足套件的版本號對齊。在某個遊戲裡使用率低（例如以靜態 sprite 為主的遊戲）是正常現象，並非缺陷。
 
